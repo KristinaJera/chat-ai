@@ -1,19 +1,49 @@
 import express from "express";
-import cors from "cors";  
+import cors from "cors";
 import { createServer } from "http";
 import { Server } from "socket.io";
+import { connectDB } from "./db";
+import messagesRoutes from "./routes/messages";
+import aiRoutes from "./routes/ai";
+import Message from "./models/Message";
+
+
+const MONGO_URI = "mongodb://127.0.0.1:27017/chat-ai"; // change to Atlas if needed
+const CLIENT_ORIGIN = "http://localhost:5173";
+const PORT = 3001;
 
 const app = express();
+app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
-app.use(cors({ origin: "http://localhost:5173" })); // Vite's default port
 
-const httpServer = createServer(app);
-const io = new Server(httpServer, { cors: { origin: "*" } });
+const http = createServer(app);
+const io = new Server(http, { cors: { origin: CLIENT_ORIGIN } });
 
+/* ---------- WebSocket events ---------- */
 io.on("connection", (socket) => {
-  console.log("👤  connected:", socket.id);
+  console.log("👤", socket.id, "connected");
 
-  socket.on("disconnect", () => console.log("🚪 disconnected:", socket.id));
+  socket.on("message:new", async (payload) => {
+    const saved = await Message.create(payload);
+    io.to(payload.roomId).emit("message:new", saved);
+  });
+
+  // typing indicator
+  socket.on("typing:start", (p) =>
+    socket.to(p.roomId).emit("typing", { ...p, isTyping: true })
+  );
+  socket.on("typing:stop", (p) =>
+    socket.to(p.roomId).emit("typing", { ...p, isTyping: false })
+  );
 });
 
-httpServer.listen(3001, () => console.log("API → http://localhost:3001"));
+/* ---------- REST routes ---------- */
+app.use("/api/messages", messagesRoutes(io)); // pass io for emits
+app.use("/api/ai", aiRoutes);
+
+connectDB(MONGO_URI).then(() =>
+  http.listen(PORT, () => console.log(`API 👉 http://localhost:${PORT}`))
+);
+
+/* export for tests */
+export { app, io };
