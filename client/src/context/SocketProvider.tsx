@@ -6,17 +6,14 @@ import { SocketContext } from "./SocketContext";
 const SOCKET_URL = "http://localhost:3001";
 
 export function SocketProvider({ children }: { children: ReactNode }) {
-  const [socket, setSocket] = useState<Socket | null>(null);
+  // initialize the socket once, *synchronously*:
+   const [socket] = useState<Socket>(() => io(SOCKET_URL, { autoConnect: true }));
 
+ // cleanup on unmount
   useEffect(() => {
-    const s = io(SOCKET_URL);
-    setSocket(s);
-    return () => void s.disconnect();
-  }, []);
-
-  return (
-    <SocketContext.Provider value={socket}>
-      {children}
-    </SocketContext.Provider>
-  );
+    return () => {
+      void socket.disconnect();
+   };
+  }, [socket]);
+  return <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>;
 }

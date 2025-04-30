@@ -27,6 +27,12 @@ io.on("connection", (socket) => {
     const saved = await Message.create(payload);
     io.to(payload.roomId).emit("message:new", saved);
   });
+    // 👇 allow clients to join arbitrary rooms
+    socket.on("join", (roomId: string) => {
+      console.log(`socket ${socket.id} joining room ${roomId}`);
+      socket.join(roomId);
+    });
+  
 
   // typing indicator
   socket.on("typing:start", (p) =>

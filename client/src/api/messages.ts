@@ -4,8 +4,7 @@ import type { Message } from "../types/message";
 const BASE = "http://localhost:3001/api/messages";
 
 export const getMessages = (roomId: string): Promise<Message[]> =>
-  fetch(`${BASE}?roomId=${roomId}`)
-    .then((r) => r.json() as Promise<Message[]>);
+  fetch(`${BASE}?roomId=${roomId}`).then((r) => r.json());
 
 export const createMessage = (msg: Partial<Message>): Promise<Message> =>
   fetch(BASE, {

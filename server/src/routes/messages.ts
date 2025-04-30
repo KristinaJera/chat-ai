@@ -5,6 +5,15 @@ import Message from "../models/Message";
 export default function messageRoutes(io: SocketIOServer): Router {
   const r = Router();
 
+  r.get("/", async (req, res) => {
+    const roomId = req.query.roomId as string;
+    if (!roomId) {
+      res.status(400).json({ error: "roomId query required" });
+      return;
+    }
+    const msgs = await Message.find({ roomId }).sort({ createdAt: 1 });
+    res.json(msgs);
+  });
   /* ─── POST /api/messages ─── */
   r.post("/", async (req, res) => {
     const msg = await Message.create(req.body);
