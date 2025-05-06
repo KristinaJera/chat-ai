@@ -7,7 +7,6 @@ import messagesRoutes from "./routes/messages";
 import aiRoutes from "./routes/ai";
 import Message from "./models/Message";
 
-
 const MONGO_URI = "mongodb://127.0.0.1:27017/chat-ai"; // change to Atlas if needed
 const CLIENT_ORIGIN = "http://localhost:5173";
 const PORT = 3001;

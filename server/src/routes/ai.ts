@@ -1,31 +1,59 @@
-import { Router } from "express";
-// import fetch from "node-fetch";   
+import { Router, Request, Response } from "express";
+import OpenAI from "openai";
+import dotenv from "dotenv";
+dotenv.config();
 
-// helper: fake translate until you wire real model
-const mockTranslate = (t: string) => `EN: ${t}`;
+const router = Router();
 
-export default Router()
-  .post("/translate", (req, res) => {
-    const { text, target } = req.body;
-    res.json({ translated: mockTranslate(text) });
-  })
-  .post("/lookup-word", async (req, res) => {
-    const { word } = req.body;
-    const wiki = `Fake wiki snippet for ${word}`;
-    const dict = `Fake dictionary entry for ${word}`;
-    res.json({ wiki, dict });
-  })
-  .post("/rewrite", async (req, res) => {
-    const { draft } = req.body;
-    // ---- local LLM via Ollama (change prompt later)
-    const resp = await fetch("http://localhost:11434/api/generate", {
-      method: "POST",
-      body: JSON.stringify({
-        model: "mistral",
-        prompt: `Rewrite professionally:\n\n${draft}`,
-        stream: false,
-      }),
-    }).then((r) => r.json());
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
 
-    res.json({ professional: resp.response.trim() });
-  });
+router.post("/rewrite", async (req: Request, res: Response) => {
+  const userText = req.body.text || "";
+
+  const prompt =
+    `Please rewrite the following text in a professional, polished tone, ` +
+    `correcting grammar, improving clarity, and using elevated vocabulary. ` +
+    `Preserve the original meaning.\n\nText: "${userText}"`;
+
+  try {
+    const apiResponse = await openai.chat.completions.create({
+      model: "gpt-3.5-turbo",
+      messages: [{ role: "user", content: prompt }],
+      n: 3,
+      temperature: 0.7,
+      max_tokens: 200,
+    });
+
+    const choices = apiResponse.choices || [];
+    const rewrites = choices.map(
+      (choice) => choice.message?.content?.trim() || ""
+    );
+
+    res.json({ suggestions: rewrites });
+  } catch (error) {
+    console.error("OpenAI rewrite error:", error);
+    const fallback = [
+      userText,
+      `${userText} (alternative wording)`,
+      `${userText} (another rephrasing)`,
+    ];
+    res.json({ suggestions: fallback });
+  }
+});
+
+router.post("/translate", (req: Request, res: Response) => {
+  const { text, target } = req.body as { text: string; target: string };
+  const translated = `EN (${target}): ${text}`;
+  res.json({ translated });
+});
+
+// router.post("/lookup-word", (req: Request, res: Response) => {
+//   const { word } = req.body as { word: string };
+//   const wiki = `Example Wikipedia snippet about "${word}".`;
+//   const dict = `Definition of "${word}" from dictionary.`;
+//   res.json({ wiki, dict });
+// });
+
+export default router;
