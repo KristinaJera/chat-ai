@@ -7,15 +7,33 @@ import Message from '../models/Message';
 const router = Router();
 
 // auth guard: only calls res.sendStatus or next(), returns void
-function ensureAuth(req: Request, res: Response, next: NextFunction): void {
+function ensureAuth(req: any, res: any, next: NextFunction): void {
   if (req.isAuthenticated && req.isAuthenticated()) {
-    next();
-  } else {
-    res.sendStatus(401);
+    return next();
   }
+  res.sendStatus(401);
 }
 
-// POST /api/chats - create or get 1:1 chat
+// GET /api/chats - list all chats for current user
+router.get(
+  '/',
+  ensureAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const meId = (req.user as IUser)._id as Types.ObjectId;
+      const chats = await Chat.find({ participants: meId }).populate(
+        'participants',
+        'name shareId'
+      );
+      res.json(chats);
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// POST /api/chats - create or get chat by participants or inviteCode
 router.post(
   '/',
   ensureAuth,
@@ -24,12 +42,14 @@ router.post(
       const meId = (req.user as IUser)._id as Types.ObjectId;
       let participants: Types.ObjectId[] = [];
 
+      // Group chat via explicit participant IDs
       if (Array.isArray(req.body.participants)) {
         participants = req.body.participants.map(
           (id: string) => new Types.ObjectId(id)
         );
       }
 
+      // 1:1 chat via invite code (shareId)
       if (req.body.inviteCode) {
         const other = await User.findOne({ shareId: req.body.inviteCode });
         if (!other) {
@@ -39,12 +59,12 @@ router.post(
         participants = [meId, other._id as Types.ObjectId];
       }
 
-      // include self
+      // Always include current user
       if (!participants.some(id => id.equals(meId))) {
         participants.push(meId);
       }
 
-      // find exact match
+      // Find existing chat with exact participants
       let chat = await Chat.findOne({
         participants: { $all: participants, $size: participants.length }
       });
@@ -61,7 +81,7 @@ router.post(
   }
 );
 
-// POST /api/chats/:chatId/participants - add user
+// POST /api/chats/:chatId/participants - add someone by inviteCode
 router.post(
   '/:chatId/participants',
   ensureAuth,
@@ -102,7 +122,7 @@ router.post(
   }
 );
 
-// GET /api/chats/:chatId/messages - fetch history
+// GET /api/chats/:chatId/messages - fetch chat messages
 router.get(
   '/:chatId/messages',
   ensureAuth,
