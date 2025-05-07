@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { fetchChats } from '../api/chats';
 
 export interface ChatSummary {
   _id: string;
@@ -10,15 +11,11 @@ export function useChats() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/chats', { credentials: 'include' })
-      .then(res => {
-        if (!res.ok) throw new Error('Failed to load chats');
-        return res.json() as Promise<ChatSummary[]>;
-      })
-      .then(setChats)
+    fetchChats()
+      .then(data => setChats(data))
       .catch(err => console.error('useChats error:', err))
       .finally(() => setLoading(false));
   }, []);
 
-  return { chats, loading };
+  return { chats, loading, setChats };
 }

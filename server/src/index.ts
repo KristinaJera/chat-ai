@@ -13,6 +13,8 @@ import chatsRoutes from './routes/chats';
 import User from './models/User';
 import Chat from './models/Chat';
 import Message from './models/Message';
+import usersRoutes from './routes/users';
+import { Types } from 'mongoose';
 
 dotenv.config();
 const MONGO_URI = process.env.MONGO_URI!;
@@ -78,19 +80,39 @@ const io = new Server(httpServer, { cors: { origin: CLIENT_ORIGIN } });
 // Now io is available for routes and handlers
 
 // ----- WebSocket Handlers -----
+io.use((socket, next) => {
+  const req = socket.request as any;
+  const userId = req.session?.passport?.user;
+  if (userId) {
+    socket.data.userId = userId;
+    return next();
+  }
+  next(new Error('Unauthorized'));
+});
 io.on('connection', (socket) => {
   console.log('👤', socket.id, 'connected');
 
+
   socket.on('joinChat', async (chatId: string) => {
     const chat = await Chat.findById(chatId);
-    if (chat?.participants.includes((socket.data as any).userId)) {
+    if (chat?.participants.some(p => p.equals(socket.data.userId))) {
       socket.join(chatId);
     }
   });
 
   socket.on('message:new', async (data) => {
-    const saved = await Message.create(data);
-    io.to(data.chatId).emit('message:new', saved);
+    // const saved = await Message.create(data);
+    // io.to(data.chatId).emit('message:new', saved);
+    const { chatId, body, replyTo } = data as {
+        chatId: string; body: string; replyTo?: string;
+      };
+      const saved = await Message.create({
+        roomId: new Types.ObjectId(chatId),
+        authorId: socket.data.userId,
+        body,
+        replyTo: replyTo ? new Types.ObjectId(replyTo) : undefined,
+      });
+      io.to(chatId).emit('message:new', saved);
   });
 
   socket.on('typing:start', (p) =>
@@ -110,9 +132,15 @@ app.get(
 );
 
 app.get('/api/users/me', ensureAuth, (req, res) => {
-  const u = req.user as any;
-  res.json({ id: u._id, name: u.name, shareId: u.shareId });
+  const user = req.user as any;
+  res.json({ 
+    id: user._id,
+    name: user.name, 
+    email:   user.email,
+    shareId: user.shareId 
+  });
 });
+
 
 // GET /auth/logout
 app.get('/auth/logout', (req, res) => {
@@ -130,6 +158,7 @@ app.get('/auth/logout', (req, res) => {
 app.use('/api/messages', messagesRoutes(io));
 app.use('/api/ai', aiRoutes);
 app.use('/api/chats', chatsRoutes);
+app.use('/api/users', usersRoutes);
 
 // ----- Start Server -----
 connectDB(MONGO_URI).then(() =>

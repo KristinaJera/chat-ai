@@ -1,29 +1,70 @@
-// src/api/messages.ts
-import type { Message } from "../types/message";
+import type { Message } from '../types/message';
 
-const BASE = "http://localhost:3001/api/messages";
+const BASE = 'http://localhost:3001/api/messages';
 
-export const getMessages = (roomId: string): Promise<Message[]> =>
-  fetch(`${BASE}?roomId=${roomId}`).then((r) => r.json());
+// Fetch all messages for a given chat
+export const getMessages = async (chatId: string): Promise<Message[]> => {
+    const res = await fetch(`${BASE}?chatId=${encodeURIComponent(chatId)}`, {
+       credentials: 'include',
+  });
 
-export const createMessage = (msg: Partial<Message>): Promise<Message> =>
-  fetch(BASE, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(msg),
-  }).then((r) => r.json() as Promise<Message>);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`Failed to load messages: ${res.status} - ${error?.error || 'Unknown error'}`);
+  }
 
-export const editMessage = (
-  id: string,
-  body: string
-): Promise<Message> =>
-  fetch(`${BASE}/${id}`, {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
+  return res.json();
+};
+
+// Create a new message
+export const createMessage = async (msg: Partial<Message> & { chatId: string }): Promise<Message> => {
+  const res = await fetch(BASE, {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      chatId: msg.chatId,
+      body:   msg.body,
+      replyTo: msg.replyTo,
+    }),
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`Failed to create message: ${res.status} - ${error?.error || 'Unknown error'}`);
+  }
+
+  return res.json();
+};
+
+// Edit an existing message
+export const editMessage = async (id: string, body: string): Promise<Message> => {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ body }),
-  }).then((r) => r.json() as Promise<Message>);
+  });
 
-export const deleteMessage = (id: string): Promise<Message> =>
-  fetch(`${BASE}/${id}`, {
-    method: "DELETE",
-  }).then((r) => r.json() as Promise<Message>);
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`Failed to edit message: ${res.status} - ${error?.error || 'Unknown error'}`);
+  }
+
+  return res.json();
+};
+
+// Delete a message
+export const deleteMessage = async (id: string): Promise<Message> => {
+  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+
+  if (!res.ok) {
+    const error = await res.json().catch(() => ({}));
+    throw new Error(`Failed to delete message: ${res.status} - ${error?.error || 'Unknown error'}`);
+  }
+
+  return res.json();
+};

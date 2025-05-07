@@ -1,38 +1,44 @@
-// frontend/src/pages/ChatPage.tsx
+// src/pages/ChatPage.tsx
 
 import React, { useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { useMessages } from "../hooks/useMessages";
 import { useTyping } from "../hooks/useTyping";
 import { MessageList } from "../components/chat/MessageList";
 import { Composer } from "../components/chat/Composer";
 import { TypingFooter } from "../components/chat/TypingFooter";
-import { User } from "../hooks/useAuth";  // make sure this matches where you defined the User interface
+import { User } from "../hooks/useAuth";
+import { deleteChat } from "../api/chats";
 
 interface ChatPageProps {
   user: User;
 }
 
 export default function ChatPage({ user }: ChatPageProps) {
-  const roomId = "room1";
-  // now pull username from the user prop
+  const { id: chatIdParam } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const chatId = chatIdParam ?? "";
   const username = user.name;
 
-  const { messages, send, edit, remove } = useMessages(roomId, username);
-  const { typingUsers, onInput } = useTyping(roomId, username);
+  // Initialize hooks with chatId
+  const { messages, send, edit, remove } = useMessages(chatId, username);
+  const { typingUsers, onInput } = useTyping(chatId, username);
+  const [replyTo, setReplyTo] = useState<string | null>(null);
 
-  // Edit handler
+  if (!chatIdParam) {
+    return <div>Loading chat...</div>;
+  }
+
   const handleEdit = (id: string) => {
     const orig = messages.find((m) => m._id === id)?.body ?? "";
     const body = prompt("Edit message:", orig);
     if (body !== null) edit(id, body);
   };
 
-  // Delete handler
   const handleDelete = (id: string) => {
     if (confirm("Delete this message?")) remove(id);
   };
 
-  // Translate via Google Translate
   const handleTranslate = (id: string) => {
     const msg = messages.find((m) => m._id === id);
     if (!msg) return;
@@ -42,15 +48,28 @@ export default function ChatPage({ user }: ChatPageProps) {
     window.open(url, "_blank");
   };
 
-  // Reply handler
-  const [replyTo, setReplyTo] = useState<string | null>(null);
   const handleReply = (id: string) => setReplyTo(id);
 
   return (
     <div className="h-screen flex flex-col bg-gray-100">
-      <header className="p-4 bg-white shadow text-xl font-bold">
-        🗨️ Chat — {username}
-      </header>
+<header className="p-4 bg-white shadow flex justify-between items-center">
+  <h3 className="text-xl font-bold">🗨️ Chat — {username}</h3>
+  <button
+    onClick={async () => {
+      if (!confirm('Delete this chat for everyone?')) return;
+      try {
+        await deleteChat(chatId);
+        navigate('/');
+      } catch (e) {
+        alert(`Error: ${e instanceof Error ? e.message : e}`);
+      }
+    }}
+    className="text-red-600 hover:text-red-800"
+  >
+    Delete Chat
+  </button>
+</header>
+
 
       <main className="flex-1 p-4 space-y-2 overflow-y-auto">
         <MessageList

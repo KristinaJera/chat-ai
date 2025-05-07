@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from "react";
 import type { Message } from "../../types/message";
 
@@ -21,7 +20,7 @@ export const MessageItem: React.FC<Props> = ({
   onTranslate,
   onReply,
 }) => {
-  const isMine = message.authorId === currentUser;
+  const isMine = message.authorName === currentUser;
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -54,17 +53,20 @@ export const MessageItem: React.FC<Props> = ({
         }`}
         onClick={() => setMenuOpen((o) => !o)}
       >
-        { /* if this is a reply, show original snippet */ }
         {original && (
           <div className="mb-1 p-1 bg-gray-200 text-xs italic rounded">
             ↳ {original.body}
           </div>
         )}
-        <div className="font-semibold">{message.authorId}</div>
+        <div className="font-semibold">
+          {isMine ? "You" : message.authorName}
+        </div>
         <div>
-          {message.status === "deleted"
-            ? <em className="italic text-gray-300">[deleted]</em>
-            : message.body}
+          {message.status === "deleted" ? (
+            <em className="italic text-gray-300">[deleted]</em>
+          ) : (
+            message.body
+          )}
         </div>
         {message.status === "edited" && (
           <div className="text-xxs text-gray-300 mt-1">(edited)</div>

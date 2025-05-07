@@ -1,3 +1,5 @@
+// src/hooks/useMessages.ts
+
 import { useEffect, useState, useCallback } from "react";
 import type { Message } from "../types/message";
 import {
@@ -8,49 +10,61 @@ import {
 } from "../api/messages";
 import { useSocket } from "./useSocket";
 
-export function useMessages(roomId: string, authorId: string) {
+export function useMessages(chatId: string, authorId: string) {
   const socket = useSocket();
   const [messages, setMessages] = useState<Message[]>([]);
 
-  // join room & load history
+  // Join chat, load messages, and clean up
   useEffect(() => {
-    socket.emit("join", roomId);
-    getMessages(roomId).then(setMessages);
-  }, [roomId, socket]);
+    setMessages([]);
+    socket.emit("joinChat", chatId);
 
-  // subscribe to WS events
+    getMessages(chatId)
+      .then((msgs) => setMessages(msgs))
+      .catch(console.error);
+
+    return () => {
+      socket.emit("leaveChat", chatId);
+    };
+  }, [chatId, socket]);
+
+  // Handle real-time updates
   useEffect(() => {
-    const onNew = (msg: Message) => setMessages((m) => [...m, msg]);
-    const onUpdate = (upd: Message) =>
-      setMessages((m) => m.map((x) => (x._id === upd._id ? upd : x)));
-    const onDelete = (del: Message) =>
-      setMessages((m) => m.map((x) => (x._id === del._id ? del : x)));
+    const onNew = (msg: Message) => {
+      if (msg.roomId === chatId) setMessages((prev) => [...prev, msg]);
+    };
+    const onUpdate = (upd: Message) => {
+      if (upd.roomId === chatId) {
+        setMessages((prev) =>
+          prev.map((m) => (m._id === upd._id ? upd : m))
+        );
+      }
+    };
+    const onDelete = (del: Message) => {
+      if (del.roomId === chatId) {
+        setMessages((prev) => prev.filter((m) => m._id !== del._id));
+      }
+    };
 
     socket.on("message:new", onNew);
     socket.on("message:update", onUpdate);
     socket.on("message:delete", onDelete);
+
     return () => {
       socket.off("message:new", onNew);
       socket.off("message:update", onUpdate);
       socket.off("message:delete", onDelete);
     };
-  }, [socket]);
+  }, [socket, chatId]);
 
-  // actions
+  // Actions for sending, editing, and deleting
   const send = useCallback(
-    (body: string, replyTo?: string) => {
-      createMessage({ roomId, authorId, body, replyTo });
-    },
-    [roomId, authorId]
+    (body: string, replyTo?: string) =>
+      createMessage({ chatId, authorId, body, replyTo }),
+    [chatId, authorId]
   );
-  const edit = useCallback((id: string, body: string) => {
-    console.log("PUT /api/messages", id, body);
-    editMessage(id, body);
-  }, []);
-  const remove = useCallback((id: string) => {
-    console.log("DELETE /api/messages", id);
-    deleteMessage(id);
-  }, []);
+  const edit = useCallback((id: string, body: string) => editMessage(id, body), []);
+  const remove = useCallback((id: string) => deleteMessage(id), []);
 
   return { messages, send, edit, remove };
 }
