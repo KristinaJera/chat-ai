@@ -64,7 +64,13 @@ export function useMessages(chatId: string, authorId: string) {
     [chatId, authorId]
   );
   const edit = useCallback((id: string, body: string) => editMessage(id, body), []);
-  const remove = useCallback((id: string) => deleteMessage(id), []);
-
+  const remove = useCallback(
+    async (id: string) => {
+      await deleteMessage(id);
+      // immediately remove from UI
+      setMessages((prev) => prev.filter((m) => m._id !== id));
+    },
+    []
+  );
   return { messages, send, edit, remove };
 }

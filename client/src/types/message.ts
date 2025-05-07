@@ -3,7 +3,6 @@ export interface Message {
   roomId: string;
   chat?: string; // optional: kept for legacy structure if needed
   authorId: string;
-  authorName: string; // ✅ newly added for display
   body: string;
   replyTo?: string;
   status: "sent" | "edited" | "deleted";

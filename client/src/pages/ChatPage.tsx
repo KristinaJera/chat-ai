@@ -18,11 +18,11 @@ export default function ChatPage({ user }: ChatPageProps) {
   const { id: chatIdParam } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const chatId = chatIdParam ?? "";
-  const username = user.name;
-
+  // const username = user.name;
+  const currentUserId   = user.id;  
   // Initialize hooks with chatId
-  const { messages, send, edit, remove } = useMessages(chatId, username);
-  const { typingUsers, onInput } = useTyping(chatId, username);
+  const { messages, send, edit, remove } = useMessages(chatId, currentUserId);
+  const { typingUsers, onInput } = useTyping(chatId, currentUserId);
   const [replyTo, setReplyTo] = useState<string | null>(null);
 
   if (!chatIdParam) {
@@ -53,7 +53,7 @@ export default function ChatPage({ user }: ChatPageProps) {
   return (
     <div className="h-screen flex flex-col bg-gray-100">
 <header className="p-4 bg-white shadow flex justify-between items-center">
-  <h3 className="text-xl font-bold">🗨️ Chat — {username}</h3>
+  <h3 className="text-xl font-bold">🗨️ Chat — {user.name}</h3>
   <button
     onClick={async () => {
       if (!confirm('Delete this chat for everyone?')) return;
@@ -74,7 +74,7 @@ export default function ChatPage({ user }: ChatPageProps) {
       <main className="flex-1 p-4 space-y-2 overflow-y-auto">
         <MessageList
           messages={messages}
-          currentUser={username}
+          currentUser={currentUserId}
           onEdit={handleEdit}
           onDelete={handleDelete}
           onTranslate={handleTranslate}

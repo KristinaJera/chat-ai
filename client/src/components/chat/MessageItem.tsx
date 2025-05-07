@@ -20,7 +20,7 @@ export const MessageItem: React.FC<Props> = ({
   onTranslate,
   onReply,
 }) => {
-  const isMine = message.authorName === currentUser;
+  const isMine = message.authorId === currentUser;
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
@@ -59,7 +59,7 @@ export const MessageItem: React.FC<Props> = ({
           </div>
         )}
         <div className="font-semibold">
-          {isMine ? "You" : message.authorName}
+          {isMine ? "You" : message.authorId}
         </div>
         <div>
           {message.status === "deleted" ? (

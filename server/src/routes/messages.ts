@@ -132,38 +132,52 @@ export default function messageRoutes(io: SocketIOServer): Router {
     }
   );
 
-  // DELETE /api/messages/:id
-  r.delete(
-    "/:id",
-    ensureAuth,
-    async (req: Request, res: Response): Promise<void> => {
-      try {
-        const userId = (req.user as any)._id;
-        const { id } = req.params;
-        const msg = await Message.findById(id);
+ // DELETE /api/messages/:id
+r.delete(
+  "/:id",
+  ensureAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    const { id } = req.params;
 
-        if (!msg) {
-          res.sendStatus(404);
-          return;
-        }
-
-        if (msg.authorId.toString() !== userId.toString()) {
-          res.sendStatus(403);
-          return;
-        }
-
-        msg.body = "";
-        msg.status = "deleted";
-        msg.updatedAt = new Date();
-        await msg.save();
-        io.to(msg.roomId.toString()).emit("message:delete", msg);
-        res.json(msg);
-      } catch (err) {
-        console.error("Delete message error:", err);
-        res.status(500).json({ error: "Server error" });
-      }
+    // Validate the message ID
+    if (!Types.ObjectId.isValid(id)) {
+      res.status(400).json({ error: "Invalid message ID" });
+      return;
     }
-  );
 
+    try {
+      const userId = (req.user as any)._id;
+      const msg = await Message.findById(id);
+
+      // Not found?
+      if (!msg) {
+        res.sendStatus(404);
+        return;
+      }
+
+      // Only the author can delete
+      if (msg.authorId.toString() !== userId.toString()) {
+        res.sendStatus(403);
+        return;
+      }
+
+      // Mark as deleted
+      // msg.body = "";
+      msg.status = "deleted";
+      await msg.save();
+
+      // Notify clients in the room
+      io.to(msg.roomId.toString()).emit("message:delete", msg);
+
+      // Return the updated message
+      res.json(msg);
+      return;
+    } catch (err: any) {
+      console.error("🐞 Delete‐message handler error:", err);
+      res.status(500).json({ error: err.message || "Server error" });
+      return;
+    }
+  }
+);
   return r;
 }
