@@ -4,6 +4,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  optimizeDeps: {
+    include: ['react-icons/fc']
+  },
   server: {
     proxy: {
       // proxy any `/api/*` request to your backend on port 3001

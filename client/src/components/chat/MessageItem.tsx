@@ -59,7 +59,7 @@ export const MessageItem: React.FC<Props> = ({
           </div>
         )}
         <div className="font-semibold">
-          {isMine ? "You" : message.authorId}
+          {/* {isMine ? "You" : message.authorId} */}
         </div>
         <div>
           {message.status === "deleted" ? (
