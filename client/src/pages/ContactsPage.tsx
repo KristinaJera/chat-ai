@@ -62,7 +62,7 @@ export default function ContactsPage() {
 
         <div className="flex-1 px-5 py-4 md:px-3 md:py-2 overflow-y-auto">
           <h1 className="text-3xl md:text-2xl font-bold mb-6 md:mb-4 text-gray-800">
-            Contacts
+            Your Contacts
           </h1>
 
           <div className="relative mb-6 md:mb-4">

@@ -1,6 +1,9 @@
+// src/pages/ProfilePage.tsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { NavBar } from '../components/NavBar';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { FiUser, FiMail, FiKey, FiEyeOff } from 'react-icons/fi';
 
 interface ProfileData {
   id: string;
@@ -9,117 +12,87 @@ interface ProfileData {
   shareId: string;
 }
 
-interface ProfileForm {
-  name: string;
-  email: string;
-}
-
 export default function ProfilePage() {
-  const { user, loading: authLoading } = useAuth();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [form, setForm] = useState<ProfileForm>({ name: '', email: '' });
-  const [saving, setSaving] = useState(false);
-  const [editing, setEditing] = useState(false);
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
-
-  const API_BASE = 'http://localhost:3001';
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [showId, setShowId] = useState(false);
 
   useEffect(() => {
-    if (!authLoading && user) {
-      fetch(`${API_BASE}/api/users/me`, { credentials: 'include' })
+    if (!loading && user) {
+      fetch('http://localhost:3001/api/users/me', { credentials: 'include' })
         .then(res => {
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           return res.json() as Promise<ProfileData>;
         })
-        .then(data => {
-          setProfile(data);
-          setForm({ name: data.name, email: data.email });
-        })
-        .catch(err => console.error('Failed to load profile:', err));
+        .then(setProfile)
+        .catch(console.error);
     }
-  }, [authLoading, user]);
+  }, [loading, user]);
 
-  if (authLoading) return <div>Loading authentication…</div>;
-  if (!user) return <div>Not authenticated</div>;
-  if (!profile) return <div>Loading profile…</div>;
+  if (loading) return <div>Loading…</div>;
+  if (!user)   return <Navigate to="/login" replace />;
 
-  const handleProfileSave = async () => {
-    setSaving(true);
-    try {
-      const res = await fetch(`${API_BASE}/api/users/me`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      setProfile(prev => prev ? { ...prev, name: form.name, email: form.email } : prev);
-      setEditing(false);
-      alert('Profile updated successfully');
-    } catch (err) {
-      console.error('Profile update failed:', err);
-      alert('Failed to save profile');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const handleLogout = () =>
+    fetch('http://localhost:3001/auth/logout', { credentials: 'include' })
+      .finally(() => window.location.reload());
 
   return (
-    <div className="max-w-md mx-auto p-4 space-y-6 relative">
-      {/* Back arrow */}
-      <button
-        onClick={() => navigate('/')}
-        className="absolute left-4 top-4 text-xl"
-        aria-label="Go back"
-      >
-        ←
-      </button>
+    <div className="min-h-screen flex items-center justify-center
+                    bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
+      <div className="relative bg-white w-full h-screen overflow-hidden
+                      md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
 
-      <h2 className="text-xl font-bold text-center">Your Profile</h2>
-      <div className="text-sm text-gray-600 text-center">
-        Share-ID: <code>{profile.shareId}</code>
+        {/* Navbar on top */}
+        <NavBar userName={user.name} onLogout={handleLogout} />
+
+        {/* Body */}
+        <div className="px-6 pt-20 pb-8 space-y-6 flex-1 overflow-y-auto">
+          {/* Floating profile icon */}
+          <div className="flex justify-center -mt-16">
+            <div className="bg-white rounded-full p-3 shadow-lg">
+              <FiUser className="text-purple-500" size={36} />
+            </div>
+          </div>
+
+          <h2 className="text-2xl font-bold text-center text-gray-800">
+            {profile?.name}
+          </h2>
+
+          {/* Email */}
+          <div className="flex items-center space-x-3">
+            <FiMail className="text-gray-400" size={20} />
+            <span className="text-gray-700">{profile?.email}</span>
+          </div>
+
+          {/* Share ID toggle */}
+          <div className="flex items-center space-x-3">
+            {showId
+              ? <FiEyeOff className="text-gray-400" size={20} />
+              : <FiKey className="text-gray-400" size={20} />
+            }
+            <button
+              onClick={() => setShowId(s => !s)}
+              className="flex-1 text-left text-indigo-600 hover:underline"
+            >
+              {showId ? 'Hide' : 'Show'} Share ID
+            </button>
+          </div>
+          {showId && (
+            <div className="bg-gray-100 p-2 rounded text-sm break-words">
+              {profile?.shareId}
+            </div>
+          )}
+
+          {/* Back Home */}
+          <button
+            onClick={() => navigate('/chats')}
+            className="w-full py-2 bg-indigo-500 text-white rounded-full shadow hover:bg-indigo-600 transition"
+          >
+            Back to Chats
+          </button>
+        </div>
       </div>
-
-      {/* Edit toggle */}
-      <div className="flex justify-end">
-        <button
-          onClick={() => setEditing(e => !e)}
-          className="text-blue-600 hover:underline"
-        >
-          {editing ? 'Cancel' : 'Edit'}
-        </button>
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">Name</label>
-        <input
-          value={form.name}
-          onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-          disabled={!editing}
-          className={`mt-1 block w-full border p-2 rounded ${editing ? '' : 'bg-gray-100'}`}
-        />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium">Email</label>
-        <input
-          type="email"
-          value={form.email}
-          onChange={e => setForm(f => ({ ...f, email: e.target.value }))}
-          disabled={!editing}
-          className={`mt-1 block w-full border p-2 rounded ${editing ? '' : 'bg-gray-100'}`}
-        />
-      </div>
-
-      {editing && (
-        <button
-          onClick={handleProfileSave}
-          disabled={saving}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          {saving ? 'Saving...' : 'Save Profile'}
-        </button>
-      )}
     </div>
   );
 }
