@@ -24,14 +24,9 @@ export const MessageItem: React.FC<Props> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  // close when clicking outside
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (
-        menuOpen &&
-        wrapperRef.current &&
-        !wrapperRef.current.contains(e.target as Node)
-      ) {
+      if (menuOpen && wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setMenuOpen(false);
       }
     };
@@ -42,25 +37,22 @@ export const MessageItem: React.FC<Props> = ({
   return (
     <div
       ref={wrapperRef}
-      className={`relative flex ${isMine ? "justify-end" : "justify-start"}`}
+      className={`relative flex px-3 py-1 ${isMine ? "justify-end" : "justify-start"}`}
     >
-      {/* Bubble (click to open menu) */}
       <div
-        className={`max-w-xs p-2 rounded-lg cursor-pointer ${
-          isMine
-            ? "bg-blue-600 text-white rounded-br-none"
-            : "bg-white text-gray-800 rounded-bl-none"
-        }`}
         onClick={() => setMenuOpen((o) => !o)}
+        className={`relative group max-w-[75%] md:max-w-[65%] px-4 py-3 rounded-2xl text-sm font-medium transition
+          ${isMine
+            ? "bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-br-none"
+            : "bg-gradient-to-br from-cyan-100 to-cyan-300 text-gray-800 rounded-bl-none"
+        } shadow-md hover:shadow-lg cursor-pointer`}
       >
         {original && (
-          <div className="mb-1 p-1 bg-gray-200 text-xs italic rounded">
+          <div className="mb-2 px-2 py-1 bg-white bg-opacity-30 text-xs italic rounded-xl">
             ↳ {original.body}
           </div>
         )}
-        <div className="font-semibold">
-          {/* {isMine ? "You" : message.authorId} */}
-        </div>
+
         <div>
           {message.status === "deleted" ? (
             <em className="italic text-gray-300">[deleted]</em>
@@ -68,60 +60,60 @@ export const MessageItem: React.FC<Props> = ({
             message.body
           )}
         </div>
+
         {message.status === "edited" && (
-          <div className="text-xxs text-gray-300 mt-1">(edited)</div>
+          <div className="text-[10px] text-white text-opacity-60 mt-1">(edited)</div>
         )}
       </div>
 
-      {/* Pop-up menu */}
       {menuOpen && (
-        <ul className="absolute z-20 top-0 left-0 mt-12 bg-white border rounded shadow-lg w-32">
+        <ul className="absolute z-30 top-full mt-2 bg-white border border-gray-200 rounded-xl shadow-md w-36 text-sm">
           {isMine && message.status !== "deleted" && (
             <>
               <li>
                 <button
-                  className="block w-full text-left px-3 py-1 hover:bg-gray-100"
                   onClick={() => {
                     setMenuOpen(false);
                     onEdit(message._id);
                   }}
+                  className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-t-xl"
                 >
-                  Edit
+                  ✏️ Edit
                 </button>
               </li>
               <li>
                 <button
-                  className="block w-full text-left px-3 py-1 hover:bg-gray-100"
                   onClick={() => {
                     setMenuOpen(false);
                     onDelete(message._id);
                   }}
+                  className="w-full text-left px-4 py-2 hover:bg-red-50 text-red-600"
                 >
-                  Delete
+                  🗑️ Delete
                 </button>
               </li>
             </>
           )}
           <li>
             <button
-              className="block w-full text-left px-3 py-1 hover:bg-gray-100"
               onClick={() => {
                 setMenuOpen(false);
                 onTranslate(message._id);
               }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100"
             >
-              Translate
+              🌐 Translate
             </button>
           </li>
           <li>
             <button
-              className="block w-full text-left px-3 py-1 hover:bg-gray-100"
               onClick={() => {
                 setMenuOpen(false);
                 onReply(message._id);
               }}
+              className="w-full text-left px-4 py-2 hover:bg-gray-100 rounded-b-xl"
             >
-              Reply
+              💬 Reply
             </button>
           </li>
         </ul>

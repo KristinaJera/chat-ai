@@ -73,3 +73,20 @@ export async function deleteChat(chatId: string): Promise<void> {
     throw new Error(error || `Delete chat failed: ${res.status}`);
   }
 }
+// Remove a participant from a group chat 
+export async function removeParticipant(
+  chatId: string,
+  shareId: string
+): Promise<ChatSummary> {
+  const res = await fetch(`${API_BASE}/${chatId}/participants`, {
+    method: 'DELETE',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ shareId }),
+  });
+  if (!res.ok) {
+    const { error } = await res.json();
+    throw new Error(error || `Remove participant failed: ${res.status}`);
+  }
+  return res.json();
+}

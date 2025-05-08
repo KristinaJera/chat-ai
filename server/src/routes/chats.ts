@@ -160,6 +160,8 @@
 
 // All chat endpoints enforce participant membership. Users only see their own chats and messages.
 
+
+
 import { Router, Request, Response, NextFunction } from 'express';
 import { Types } from 'mongoose';
 import User, { IUser } from '../models/User';
@@ -353,6 +355,52 @@ router.delete(
       res.sendStatus(204);
     } catch (err) {
       console.error('Delete chat error:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// DELETE /api/chats/:chatId/participants - remove a participant by shareId
+router.delete(
+  '/:chatId/participants',
+  ensureAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    try {
+      const meId = (req.user as IUser)._id as Types.ObjectId;
+      const { chatId } = req.params;
+      const { shareId } = req.body;
+
+      const chat = await Chat.findById(chatId);
+      if (!chat) {
+        res.sendStatus(404);
+        return;
+      }
+
+      // Only participants can remove someone
+      if (!chat.participants.some(id => id.equals(meId))) {
+        res.sendStatus(403);
+        return;
+      }
+
+      const userToRemove = await User.findOne({ shareId });
+      if (!userToRemove) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      const userIdToRemove = userToRemove._id as Types.ObjectId;
+
+      // ✅ Allow self-removal — just remove the user normally
+      chat.participants = chat.participants.filter(
+        id => !id.equals(userIdToRemove)
+      );
+      await chat.save();
+
+      // Populate before sending
+      await chat.populate('participants', 'name shareId');
+      res.json(chat);
+    } catch (err) {
+      console.error('Remove participant error:', err);
       res.status(500).json({ error: 'Server error' });
     }
   }
