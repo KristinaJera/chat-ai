@@ -23,15 +23,7 @@ export default function App() {
           <Route path="/chats" element={<ChatsPage />} />
           <Route path="/new-chat" element={<NewChatForm />} />
           <Route path="/profile" element={<ProfilePage />} />
-          <Route path="/chat/:id" element={<ChatPage user={user!} />} />
-          <Route
-  path="/chat/:id"
-  element={
-    user
-      ? <ChatPage user={user} />
-      : <Navigate to="/login" replace />
-  }
-/>
+          <Route path="/chat/:id" element={<ChatPage user={user} />} />
           {/* fallback */}
           <Route path="*" element={<Navigate to="/chats" replace />} />
         </Routes>
