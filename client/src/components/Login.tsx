@@ -17,14 +17,15 @@ import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
  const handleGoogleLogin = () => loginWithGoogle();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
  const navigate = useNavigate();
 
-   useEffect(() => {
-    if (user) {
-      navigate('/chats', { replace: true });
-    }
-  }, [user, navigate]);
+  useEffect(() => {
+  if (!loading && user) {
+    navigate('/chats', { replace: true });
+  }
+}, [loading, user, navigate]);
+
 
   if (user) return null;
   return (
