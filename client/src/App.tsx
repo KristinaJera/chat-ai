@@ -10,9 +10,8 @@ import ContactsPage from './pages/ContactsPage';
 import ChatsPage from './pages/ChatsPage';
 
 export default function App() {
-  const { user, loading } = useAuth();
+  const { user} = useAuth();
 
-  if (loading) return <div>Loading...</div>;
   if (!user) return <Login />;
 
   return (
