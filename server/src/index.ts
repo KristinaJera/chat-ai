@@ -43,7 +43,7 @@ mongoose.connect(MONGO_URI, {
     const app = express();
     app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
     app.use(express.json());
-
+    const IN_PROD = process.env.NODE_ENV === 'production';
     // ----- Session & Passport -----
     app.use(
       session({
@@ -51,6 +51,11 @@ mongoose.connect(MONGO_URI, {
         resave: false,
         saveUninitialized: false,
         store: MongoStore.create({ mongoUrl: MONGO_URI }),
+           cookie: {
+      secure: IN_PROD,      
+      sameSite: 'none',    
+      maxAge: 1000 * 60 * 60 * 24 * 7, 
+    },
       })
     );
     app.use(passport.initialize());
@@ -95,13 +100,13 @@ mongoose.connect(MONGO_URI, {
 
     // ----- HTTP & Socket.IO Setup -----
     const httpServer = createServer(app);
-const io = new Server(httpServer, {
-  cors: {
-    origin: CLIENT_ORIGIN,     
-    credentials: true,         
-    methods: ["GET","POST"],
-  },
-});
+    const io = new Server(httpServer, {
+      cors: {
+        origin: CLIENT_ORIGIN,     
+        credentials: true,         
+        methods: ["GET","POST"],
+      },
+    });
 
     io.use((socket, next) => {
       const req = socket.request as any;
