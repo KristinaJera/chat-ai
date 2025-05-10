@@ -17,11 +17,15 @@ import Chat from './models/Chat';
 import Message from './models/Message';
 import { Types } from 'mongoose';
 
+
 dotenv.config();
 const MONGO_URI = process.env.MONGO_URI!;
-const CLIENT_ORIGIN = 'http://localhost:5173';
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN!;
+if (!CLIENT_ORIGIN) {
+  throw new Error('CLIENT_ORIGIN must be set');
+}
 const PORT = Number(process.env.PORT) || 3001;
-
+const BACKEND_URL = process.env.BACKEND_URL!;
 // Ensure SESSION_SECRET is defined
 if (!process.env.SESSION_SECRET) {
   throw new Error('SESSION_SECRET environment variable must be set');
@@ -68,7 +72,7 @@ mongoose.connect(MONGO_URI, {
         {
           clientID: process.env.GOOGLE_CLIENT_ID!,
           clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-          callbackURL: '/auth/google/callback',
+          callbackURL: `${BACKEND_URL}/auth/google/callback`,
         },
         async (_, __, profile, done) => {
           let user = await User.findOne({ googleId: profile.id });
