@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-// import { useAuth } from './hooks/useAuth';
-import { User } from './api/users';
+import { useAuth } from './hooks/useAuth';
+// import { User } from './api/users';
 import Login from './components/Login';
 import NewChatForm from './components/NewChatForm';
 import ChatPage from './pages/ChatPage';
@@ -9,10 +9,10 @@ import ProfilePage from './pages/ProfilePage';
 import ContactsPage from './pages/ContactsPage';
 import ChatsPage from './pages/ChatsPage';
 
-export default function App({ user }: { user: User }) {
-  // const { user, loading } = User();
+export default function App() {
+  const { user, loading } = useAuth();
 
-  // if (loading) return <div>Loading...</div>;
+  if (loading) return <div>Loading...</div>;
   if (!user) return <Login />;
 
   return (
