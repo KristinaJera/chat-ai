@@ -7,7 +7,7 @@ import { FiPlus, FiSearch, FiTrash, FiX } from 'react-icons/fi';
 import { logout } from '../api/auth';
 
 export default function ChatsPage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [query, setQuery] = useState('');
@@ -22,7 +22,7 @@ export default function ChatsPage() {
     fetchChats().then(setChats).catch(console.error);
   }, []);
 
-  if (loading) return <div>Loading…</div>;
+
   if (!user) return <Navigate to="/login" replace />;
 
   const filtered = chats.filter(c => {

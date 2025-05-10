@@ -13,7 +13,7 @@ interface Contact {
 }
 
 export default function ContactsPage() {
-  const { user, loading } = useAuth();
+  const { user} = useAuth();
   const navigate = useNavigate();
   const handleLogout = () => logout();
   const [contacts, setContacts] = useState<Contact[]>([]);
@@ -33,7 +33,6 @@ export default function ContactsPage() {
       .catch(e => console.error('Failed to load chats:', e));
   }, [user]);
 
-  if (loading) return <div>Loading…</div>;
   if (!user)    return <Navigate to="/login" replace />;
 
   const filtered = contacts.filter(c =>
