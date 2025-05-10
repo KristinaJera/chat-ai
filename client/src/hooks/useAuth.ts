@@ -2,7 +2,6 @@
 import { useState, useEffect } from 'react';
 import { getProfile, User} from '../api/users';
 
-// export type AuthUser = Omit<User, 'email'>;
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
