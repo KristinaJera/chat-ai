@@ -1,4 +1,4 @@
-const AI_BASE = "http://localhost:3001/api/ai";
+const AI_BASE = `${import.meta.env.VITE_API_URL}/api/ai`;
 
 export const rewrite = (
   draft: string

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:3001/api/chats';
+const API_BASE = `${import.meta.env.VITE_API_URL}/api/chats`;
 
 export interface ChatSummary {
   _id: string;
@@ -20,7 +20,7 @@ export interface Message {
 
 // Fetch list of chats for current user
 export async function fetchChats(): Promise<ChatSummary[]> {
-  const res = await fetch(API_BASE, { credentials: 'include' });
+  const res = await fetch(API_BASE, { credentials: "include" });
   if (!res.ok) throw new Error(`Failed to load chats: ${res.status}`);
   return res.json();
 }
@@ -34,7 +34,7 @@ export async function createChat(participants: string[]): Promise<Chat> {
     body: JSON.stringify({ participants }),
   });
   if (!res.ok) {
-    const { error } = await res.json();
+    const { error } = await res.json().catch(() => ({} as { error: string }));
     throw new Error(error || `Create chat failed: ${res.status}`);
   }
   return res.json();
@@ -65,8 +65,8 @@ export async function fetchMessages(chatId: string): Promise<Message[]> {
 // Delete a chat by ID
 export async function deleteChat(chatId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/${chatId}`, {
-    method: 'DELETE',
-    credentials: 'include',
+    method: "DELETE",
+    credentials: "include",
   });
   if (!res.ok) {
     const { error } = await res.json();

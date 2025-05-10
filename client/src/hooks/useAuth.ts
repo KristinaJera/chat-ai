@@ -1,38 +1,29 @@
+// src/hooks/useAuth.ts
 import { useState, useEffect } from 'react';
+import { getProfile, User} from '../api/users';
 
-export interface User {
-  id: string;
-  name: string;
-  shareId: string;
-}
+export type AuthUser = Omit<User, 'email'>;
 
 export function useAuth() {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/users/me', { credentials: 'include' })
-      .then(res => {
-        if (res.status === 401) {
-          // not logged in → return null without error
-          return null;
-        }
-        if (!res.ok) {
-          // any other non-200 is unexpected
-          throw new Error(`Unexpected HTTP ${res.status}`);
-        }
-        return res.json() as Promise<User>;
+    getProfile()
+      .then(profile => {
+        // we only need id, name, shareId here
+        const { id, name, shareId } = profile;
+        setUser({ id, name, shareId });
       })
-      .then(u => {
-        if (u) setUser(u);
-      })
-      .catch(() => {
-      
+      .catch(err => {
+        // if 401 or other error, treat as not-logged-in
+        console.error('Auth error:', err);
+        setUser(null);
       })
       .finally(() => {
         setLoading(false);
       });
-  }, []); // ← runs only once
+  }, []);
 
   return { user, loading };
 }

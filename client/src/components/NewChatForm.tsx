@@ -4,31 +4,17 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { NavBar } from '../components/NavBar';
 import { FiMessageCircle } from 'react-icons/fi';
-
-interface Chat {
-  _id: string;
-  participants: string[];
-}
-
-type NewChatPayload =
-  | { inviteCode: string }
-  | { participants: string[] };
-
-interface ApiError {
-  error?: string;
-}
+import { logout } from '../api/auth';
+import { createChat } from '../api/chats';
 
 export default function NewChatForm() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [codes, setCodes] = useState<string>('');
-
+  const handleLogout = () => logout();
   if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
   if (!user)   return <Navigate to="/login" replace />;
 
-  const handleLogout = () =>
-    fetch('http://localhost:3001/auth/logout', { credentials: 'include' })
-      .finally(() => window.location.reload());
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -42,27 +28,15 @@ export default function NewChatForm() {
       return;
     }
 
-    const payload: NewChatPayload =
-      entries.length === 1
-        ? { inviteCode: entries[0] }
-        : { participants: entries };
 
     try {
-      const res = await fetch('http://localhost:3001/api/chats', {
-        method: 'POST',
-        credentials: 'include',
-        headers:        { 'Content-Type': 'application/json' },
-        body:           JSON.stringify(payload),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({} as ApiError));
-        throw new Error(data.error || `HTTP ${res.status}`);
-      }
-      const chat = (await res.json()) as Chat;
+      // createChat takes an array of shareIds
+      const chat = await createChat(entries.length === 1 ? [entries[0]] : entries);
       navigate(`/chat/${chat._id}`);
     } catch (err: unknown) {
       console.error(err);
-      alert(`Failed to create chat: ${err instanceof Error ? err.message : err}`);
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Failed to create chat: ${msg}`);
     }
   };
 

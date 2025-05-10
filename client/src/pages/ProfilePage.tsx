@@ -4,27 +4,19 @@ import { useAuth } from '../hooks/useAuth';
 import { NavBar } from '../components/NavBar';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiKey, FiEyeOff } from 'react-icons/fi';
-
-interface ProfileData {
-  id: string;
-  name: string;
-  email: string;
-  shareId: string;
-}
+import { logout } from '../api/auth';
+import { getProfile, User } from '../api/users';
 
 export default function ProfilePage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [profile, setProfile] = useState<User | null>(null);
   const [showId, setShowId] = useState(false);
+  const handleLogout = () => logout();
 
   useEffect(() => {
     if (!loading && user) {
-      fetch('http://localhost:3001/api/users/me', { credentials: 'include' })
-        .then(res => {
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          return res.json() as Promise<ProfileData>;
-        })
+      getProfile()
         .then(setProfile)
         .catch(console.error);
     }
@@ -33,16 +25,11 @@ export default function ProfilePage() {
   if (loading) return <div>Loading…</div>;
   if (!user)   return <Navigate to="/login" replace />;
 
-  const handleLogout = () =>
-    fetch('http://localhost:3001/auth/logout', { credentials: 'include' })
-      .finally(() => window.location.reload());
-
   return (
     <div className="min-h-screen flex items-center justify-center
                     bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
       <div className="relative bg-white w-full h-screen overflow-hidden
                       md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-
         {/* Navbar on top */}
         <NavBar userName={user.name} onLogout={handleLogout} />
 

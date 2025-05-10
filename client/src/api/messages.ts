@@ -1,10 +1,10 @@
 import type { Message } from '../types/message';
 
-const BASE = 'http://localhost:3001/api/messages';
+const API_BASE = `${import.meta.env.VITE_API_URL}/api/messages`;
 
 // Fetch all messages for a given chat
 export const getMessages = async (chatId: string): Promise<Message[]> => {
-    const res = await fetch(`${BASE}?chatId=${encodeURIComponent(chatId)}`, {
+    const res = await fetch(`${API_BASE}?chatId=${encodeURIComponent(chatId)}`, {
        credentials: 'include',
   });
 
@@ -18,7 +18,7 @@ export const getMessages = async (chatId: string): Promise<Message[]> => {
 
 // Create a new message
 export const createMessage = async (msg: Partial<Message> & { chatId: string }): Promise<Message> => {
-  const res = await fetch(BASE, {
+  const res = await fetch(API_BASE, {
     method: 'POST',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -39,7 +39,7 @@ export const createMessage = async (msg: Partial<Message> & { chatId: string }):
 
 // Edit an existing message
 export const editMessage = async (id: string, body: string): Promise<Message> => {
-  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+  const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
     method: 'PUT',
     credentials: 'include',
     headers: { 'Content-Type': 'application/json' },
@@ -56,7 +56,7 @@ export const editMessage = async (id: string, body: string): Promise<Message> =>
 
 // Delete a message
 export const deleteMessage = async (id: string): Promise<Message> => {
-  const res = await fetch(`${BASE}/${encodeURIComponent(id)}`, {
+  const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     credentials: 'include',
   });

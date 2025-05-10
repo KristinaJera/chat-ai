@@ -5,6 +5,7 @@ import { NavBar } from '../components/NavBar';
 import { fetchChats, ChatSummary, createChat } from '../api/chats';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { FiPlus, FiSearch } from 'react-icons/fi';
+import { logout } from '../api/auth';
 
 interface Contact {
   name: string;
@@ -14,7 +15,7 @@ interface Contact {
 export default function ContactsPage() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
-
+  const handleLogout = () => logout();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState('');
 
@@ -34,10 +35,6 @@ export default function ContactsPage() {
 
   if (loading) return <div>Loading…</div>;
   if (!user)    return <Navigate to="/login" replace />;
-
-  const handleLogout = () =>
-    fetch('http://localhost:3001/auth/logout', { credentials: 'include' })
-      .finally(() => window.location.reload());
 
   const filtered = contacts.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())

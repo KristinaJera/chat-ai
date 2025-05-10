@@ -11,11 +11,11 @@ import {
   FiBell,
   FiSend,
 } from 'react-icons/fi';
+import { loginWithGoogle } from '../api/auth';
 
 export default function Login() {
-  const handleGoogleLogin = () =>
-    (window.location.href = 'http://localhost:3001/auth/google');
-
+ const handleGoogleLogin = () => loginWithGoogle();
+ 
   return (
     <div
       className="
@@ -31,10 +31,9 @@ export default function Login() {
           md:w-80 md:h-[600px] md:rounded-2xl md:shadow-xl
         "
       >
-
         {/* Top half gradient + animated waves */}
         <div className="relative h-3/5 bg-gradient-to-br from-cyan-400 to-blue-500 overflow-hidden">
-          {[
+          {[ 
             { cls: 'wave-slower', fill: 'rgba(255,255,255,0.2)' },
             { cls: 'wave-medium', fill: 'rgba(255,255,255,0.4)' },
             { cls: 'wave-slow',   fill: 'rgba(255,255,255,0.6)' },
