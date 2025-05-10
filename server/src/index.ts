@@ -45,6 +45,8 @@ mongoose.connect(MONGO_URI, {
     app.use(express.json());
     const IN_PROD = process.env.NODE_ENV === 'production';
     // ----- Session & Passport -----
+    
+    app.set('trust proxy', 1);
     app.use(
       session({
         secret: process.env.SESSION_SECRET!,
