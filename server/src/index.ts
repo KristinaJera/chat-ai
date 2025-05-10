@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import passport from 'passport';
 import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 import { createServer } from 'http';
@@ -68,6 +69,17 @@ passport.use(
   )
 );
 
+if (!process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET environment variable must be set');
+}
+
+app.use(session({
+  // Use non-null assertion or type assertion to avoid string | undefined error
+  secret: process.env.SESSION_SECRET!,
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({ mongoUrl: process.env.MONGO_URI })
+}));;
 function ensureAuth(req: any, res: any, next: any) {
   if (req.isAuthenticated()) return next();
   res.sendStatus(401);
