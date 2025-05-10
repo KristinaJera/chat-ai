@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import type { User } from "../hooks/useAuth";
+import type { User } from "../api/users";
 import { NavBar } from "../components/NavBar";
 import { useMessages } from "../hooks/useMessages";
 import { useTyping } from "../hooks/useTyping";

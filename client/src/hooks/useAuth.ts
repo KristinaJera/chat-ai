@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
+import { User } from '../api/users';
 
-export interface User {
-  id: string;
-  name: string;
-  shareId: string;
-}
+// export interface User {
+//   email:string;
+//   id: string;
+//   name: string;
+//   shareId: string;
+// }
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
