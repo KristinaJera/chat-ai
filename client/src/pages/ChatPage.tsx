@@ -283,7 +283,7 @@ export default function ChatPage({ user }: { user: User }) {
     if (!confirm("Remove this participant?")) return;
     await removeParticipant(chatId, shareId);
     if (shareId === user.shareId) {
-      navigate("/contacts");
+      navigate("/chats");
       return;
     }
     setParticipants((ps) => ps.filter((p) => p.shareId !== shareId));

@@ -1,3 +1,4 @@
+// src/components/chat/MessageList.tsx
 import React, { useEffect, useRef, useState } from "react";
 import type { Message } from "../../types/message";
 import { MessageItem } from "./MessageItem";
@@ -21,50 +22,53 @@ export const MessageList: React.FC<MessageListProps> = ({
   onReply,
 }) => {
   const listRef = useRef<HTMLDivElement>(null);
+  const bottomAnchor = useRef<HTMLDivElement>(null);
   const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const hasAutoScrolled = useRef(false);
 
-  // Scroll to bottom
-  const scrollToBottom = () => {
-    listRef.current?.scrollTo({
-      top: listRef.current.scrollHeight,
-      behavior: "smooth",
-    });
-  };
-
-  // Watch for new messages
+  // 1) On first render *after* messages come in, jump straight to the bottom anchor.
   useEffect(() => {
+    if (messages.length > 0 && !hasAutoScrolled.current) {
+      bottomAnchor.current?.scrollIntoView({ behavior: "auto" });
+      hasAutoScrolled.current = true;
+      setShowScrollBtn(false);
+    }
+  }, [messages]);
+
+  // 2) After that, only auto‑scroll when already at bottom; otherwise show button
+  useEffect(() => {
+    if (!hasAutoScrolled.current) return;
     const el = listRef.current;
     if (!el) return;
-
     const isNearBottom =
       el.scrollHeight - el.scrollTop - el.clientHeight < 100;
-
     if (isNearBottom) {
-      scrollToBottom();
+      bottomAnchor.current?.scrollIntoView({ behavior: "smooth" });
       setShowScrollBtn(false);
     } else {
       setShowScrollBtn(true);
     }
   }, [messages]);
 
-  // Track user scroll
+  // 3) Track manual scroll to toggle our scroll‑down button
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
-
-    const handleScroll = () => {
+    const onScroll = () => {
       const isNearBottom =
         el.scrollHeight - el.scrollTop - el.clientHeight < 100;
       setShowScrollBtn(!isNearBottom);
     };
-
-    el.addEventListener("scroll", handleScroll);
-    return () => el.removeEventListener("scroll", handleScroll);
+    el.addEventListener("scroll", onScroll);
+    return () => el.removeEventListener("scroll", onScroll);
   }, []);
+
+  const scrollToBottom = () => {
+    bottomAnchor.current?.scrollIntoView({ behavior: "smooth" });
+  };
 
   return (
     <div className="relative h-full">
-      {/* Scrollable messages */}
       <div
         ref={listRef}
         className="space-y-4 p-4 overflow-y-auto h-full rounded-lg bg-gradient-to-b from-white to-sky-300"
@@ -74,29 +78,27 @@ export const MessageList: React.FC<MessageListProps> = ({
             key={m._id}
             message={m}
             currentUser={currentUser}
-            original={
-              m.replyTo ? messages.find((x) => x._id === m.replyTo) : undefined
-            }
+            original={m.replyTo ? messages.find((x) => x._id === m.replyTo) : undefined}
             onEdit={onEdit}
             onDelete={onDelete}
             onTranslate={onTranslate}
             onReply={onReply}
           />
         ))}
+
+        {/* anchor */}
+        <div ref={bottomAnchor} />
       </div>
 
-      {/* Scroll-to-bottom button */}
       {showScrollBtn && (
         <button
-  onClick={scrollToBottom}
-  className="absolute right-5 bottom-6 z-10 p-2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg hover:scale-110 transform transition duration-300 animate-bounce-slow"
-  aria-label="Scroll to bottom"
->
-  <FiArrowDownCircle className="text-white text-3xl " />
-</button>
-
-)}
-
+          onClick={scrollToBottom}
+          className="absolute right-5 bottom-6 z-10 p-2 rounded-full bg-gradient-to-br from-cyan-400 to-blue-500 shadow-lg hover:scale-110 transform transition duration-300 animate-bounce-slow"
+          aria-label="Scroll to bottom"
+        >
+          <FiArrowDownCircle className="text-white text-3xl" />
+        </button>
+      )}
     </div>
   );
 };
