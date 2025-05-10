@@ -10,5 +10,5 @@ export async function logout() {
     credentials: "include",
   });
   // reload so that useAuth() sees user=null
-  window.location.reload();
+  window.location.href = '/'; 
 }

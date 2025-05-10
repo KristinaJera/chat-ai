@@ -155,16 +155,14 @@ mongoose.connect(MONGO_URI, {
       res.json({ id: user._id, name: user.name, email: user.email, shareId: user.shareId });
     });
 
-    app.get('/auth/logout', (req, res) => {
-      req.logout(err => {
-        if (err) console.error('Logout error:', err);
-        req.session.destroy(err => {
-          if (err) console.error('Session destroy error:', err);
-          res.clearCookie('connect.sid');
-          res.redirect(CLIENT_ORIGIN);
-        });
-      });
+ app.get('/auth/logout', (req, res) => {
+  req.logout(() => {
+    req.session.destroy(() => {
+      res.clearCookie('connect.sid');
+      res.json({ ok: true });
     });
+  });
+});
 
     app.use('/api/messages', messagesRoutes(io));
     app.use('/api/ai', aiRoutes);
