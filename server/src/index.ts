@@ -95,7 +95,13 @@ mongoose.connect(MONGO_URI, {
 
     // ----- HTTP & Socket.IO Setup -----
     const httpServer = createServer(app);
-    const io = new Server(httpServer, { cors: { origin: CLIENT_ORIGIN } });
+const io = new Server(httpServer, {
+  cors: {
+    origin: CLIENT_ORIGIN,     
+    credentials: true,         
+    methods: ["GET","POST"],
+  },
+});
 
     io.use((socket, next) => {
       const req = socket.request as any;

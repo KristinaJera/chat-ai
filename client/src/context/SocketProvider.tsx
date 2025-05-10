@@ -13,7 +13,9 @@ interface Props {
 export function SocketProvider({ children }: Props) {
   // Initialize the socket once, synchronously:
   const [socket] = useState<Socket>(
-    () => io(SOCKET_URL, { autoConnect: true, withCredentials: true })
+    () => io(SOCKET_URL, { 
+      autoConnect: true, 
+      withCredentials: true })
   );
 
   // Clean up on unmount
