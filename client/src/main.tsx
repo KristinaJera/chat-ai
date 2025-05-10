@@ -1,14 +1,32 @@
 // src/main.tsx
-import React from "react";
-import ReactDOM from "react-dom/client";
-import App from "./App";
-import { SocketProvider } from "./context/SocketProvider";
-import "./index.css";
+import React, { ReactNode } from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter }   from 'react-router-dom';
+import App from './App';
+import { SocketProvider }  from './context/SocketProvider';
+import './index.css';
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+interface ErrorBoundaryState { error: Error | null; }
+
+class ErrorBoundary extends React.Component<{ children: ReactNode }, ErrorBoundaryState> {
+  state: ErrorBoundaryState = { error: null };
+  static getDerivedStateFromError(error: Error) { return { error }; }
+  render() {
+    if (this.state.error) {
+      return <div className="p-4 text-red-600">Error: {this.state.error.message}</div>;
+    }
+    return this.props.children;
+  }
+}
+
+ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <SocketProvider>
-      <App />
-    </SocketProvider>
+    <BrowserRouter>
+      <SocketProvider>
+        <ErrorBoundary>
+          <App />
+        </ErrorBoundary>
+      </SocketProvider>
+    </BrowserRouter>
   </React.StrictMode>
 );
