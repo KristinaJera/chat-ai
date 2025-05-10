@@ -8,21 +8,19 @@ import { logout } from '../api/auth';
 import { getProfile, User } from '../api/users';
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
   const [showId, setShowId] = useState(false);
   const handleLogout = () => logout();
 
   useEffect(() => {
-    if (!loading && user) {
+    if ( user) {
       getProfile()
         .then(setProfile)
         .catch(console.error);
     }
-  }, [loading, user]);
-
-  if (loading) return <div>Loading…</div>;
+  }, [ user]);
   if (!user)   return <Navigate to="/login" replace />;
 
   return (

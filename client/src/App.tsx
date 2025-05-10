@@ -25,7 +25,7 @@ export default function App() {
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/chat/:id" element={<ChatPage user={user} />} />
           {/* fallback */}
-          <Route path="*" element={<Navigate to="/chats" replace />} />
+          {/* <Route path="*" element={<Navigate to="/chats" replace />} /> */}
         </Routes>
     </BrowserRouter>
   );
