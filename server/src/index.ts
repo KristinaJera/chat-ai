@@ -55,10 +55,21 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000, tls: true })
     app.use(cookieParser());
 
     // CORS
-    app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+    // app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
 
     const IN_PROD = process.env.NODE_ENV === 'production';
+const ALLOWED_ORIGINS = IN_PROD
+  ? [process.env.CLIENT_ORIGIN!]
+  : [process.env.CLIENT_ORIGIN!, 'http://localhost:5173'];
 
+app.use(cors({
+  origin: (origin, cb) => {
+    // browser sends `undefined` on curl or some dev reloads; allow it too
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+    cb(new Error(`Origin ${origin} not allowed`));
+  },
+  credentials: true,
+}));
     // ----- Session & Passport -----
     const sessionMiddleware = session({
       secret: process.env.SESSION_SECRET!,
