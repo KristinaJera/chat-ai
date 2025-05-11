@@ -12,7 +12,7 @@ interface Contact {
 }
 
 export default function ContactsPage() {
-  const { user} = useAuth();
+  const { user, loading} = useAuth();
   const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState('');
@@ -31,8 +31,10 @@ export default function ContactsPage() {
       .catch(e => console.error('Failed to load chats:', e));
   }, [user]);
 
-  if (!user)    return <Navigate to="/login" replace />;
 
+    if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
+    if (!user)   return <Navigate to="/login" replace />;
+  
   const filtered = contacts.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );

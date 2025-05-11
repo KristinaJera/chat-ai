@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import type { User } from "../api/users";
-import { NavBar } from "../components/NavBar";
+import { useParams, useNavigate, Navigate, useLocation } from "react-router-dom";
+import { useAuth } from "../hooks/useAuth";
 import { useMessages } from "../hooks/useMessages";
 import { useTyping } from "../hooks/useTyping";
+import { NavBar } from "../components/NavBar";
 import { MessageList } from "../components/chat/MessageList";
 import { Composer } from "../components/chat/Composer";
 import { TypingFooter } from "../components/chat/TypingFooter";
@@ -14,39 +14,75 @@ import {
   FiChevronDown,
   FiChevronUp,
 } from "react-icons/fi";
-import { deleteChat, removeParticipant } from "../api/chats";
-import { fetchChats, ChatSummary } from "../api/chats";
+import {
+  deleteChat,
+  removeParticipant,
+  fetchChats,
+  ChatSummary,
+} from "../api/chats";
+import { User } from "../api/users";
 
 interface Participant {
   name: string;
   shareId: string;
 }
+interface ChatPageProps {
+  user: User;
+}
 
-export default function ChatPage({ user }: { user: User }) {
+export default function ChatPage({ user }: ChatPageProps) {
+  // Authentication and routing
+  const { loading } = useAuth();
   const { id } = useParams<{ id: string }>();
   const chatId = id ?? "";
   const navigate = useNavigate();
+  const location = useLocation();
 
+  // Always call hooks in the same order
+  const { messages, send, edit, remove } = useMessages(chatId, user?.id ?? "");
+  const { typingUsers, onInput } = useTyping(chatId, user?.id ?? "");
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [showList, setShowList] = useState(false);
   const [replyTo, setReplyTo] = useState<string | null>(null);
 
-  const { messages, send, edit, remove } = useMessages(chatId, user.id);
-  const { typingUsers, onInput } = useTyping(chatId, user.id);
-
+  // Load participants when chatId changes
   useEffect(() => {
+    if (!chatId) return;
     fetchChats()
       .then((all: ChatSummary[]) => {
         const chat = all.find((c) => c._id === chatId);
-        if (chat) {
-          setParticipants(chat.participants);
-        } else {
-          console.warn("Chat not found: ", chatId);
-        }
+        if (chat) setParticipants(chat.participants);
+        else console.warn("Chat not found:", chatId);
       })
       .catch(console.error);
   }, [chatId]);
 
+  // Loading and authentication guards
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Loading…
+      </div>
+    );
+  }
+  if (!user) {
+    return (
+      <Navigate
+        to="/login"
+        replace
+        state={{ from: location.pathname }}
+      />
+    );
+  }
+  if (!chatId) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        Invalid chat
+      </div>
+    );
+  }
+
+  // Handlers
   const handleRemove = async (shareId: string) => {
     if (!confirm("Remove this participant?")) return;
     await removeParticipant(chatId, shareId);
@@ -57,27 +93,27 @@ export default function ChatPage({ user }: { user: User }) {
     setParticipants((ps) => ps.filter((p) => p.shareId !== shareId));
   };
 
-  const others = participants.filter((p) => p.shareId !== user.shareId);
-  const collapsedTitle =
-    participants.length > 2
-      ? `${others.slice(0, 2).map((p) => p.name).join(", ")}, …`
-      : others.map((p) => p.name).join(", ");
-  const title = collapsedTitle;
-
   const handleDeleteChat = async () => {
     if (!confirm("Delete this chat?")) return;
     await deleteChat(chatId);
     navigate("/chats");
   };
 
-  if (!chatId) return null;
+  // Participant header title logic
+  const others = participants.filter(
+    (p) => p.shareId !== user.shareId
+  );
+  const title =
+    participants.length > 2
+      ? `${others.slice(0, 2).map((p) => p.name).join(", ")}, …`
+      : others.map((p) => p.name).join(", ");
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500 text-[100%] md:text-sm">
       <div className="relative bg-white w-full h-screen overflow-hidden md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-        <NavBar userName={user.name}/>
+        <NavBar userName={user.name} />
 
-        {/* participants header */}
+        {/* Participants Header */}
         <div className="p-4 bg-white">
           <div className="flex justify-between items-center">
             <div className="flex-1 flex items-center space-x-2">
@@ -92,7 +128,12 @@ export default function ChatPage({ user }: { user: User }) {
                 className="text-xl md:text-base font-semibold text-gray-900 truncate flex items-center space-x-1"
               >
                 <span>{title || "No participants"}</span>
-                {participants.length > 2 && (showList ? <FiChevronUp size={16} /> : <FiChevronDown size={16} />)}
+                {participants.length > 2 &&
+                  (showList ? (
+                    <FiChevronUp size={16} />
+                  ) : (
+                    <FiChevronDown size={16} />
+                  ))}
               </button>
             </div>
             <button
@@ -102,7 +143,6 @@ export default function ChatPage({ user }: { user: User }) {
               <FiTrash2 size={20} />
             </button>
           </div>
-
           {showList && (
             <ul className="mt-3 space-y-2">
               {participants.map((p) => (
@@ -125,13 +165,14 @@ export default function ChatPage({ user }: { user: User }) {
           )}
         </div>
 
-        {/* messages */}
-        <main className="flex-1 space-y-2 overflow-y-auto  bg-gradient-to-b from-white to-sky-300">
+        {/* Message List */}
+        <main className="flex-1 space-y-2 overflow-y-auto bg-gradient-to-b from-white to-sky-300">
           <MessageList
             messages={messages}
             currentUser={user.id}
             onEdit={(msgId) => {
-              const orig = messages.find((m) => m._id === msgId)?.body || "";
+              const orig =
+                messages.find((m) => m._id === msgId)?.body || "";
               const body = prompt("Edit message:", orig);
               if (body !== null) edit(msgId, body);
             }}
@@ -153,6 +194,7 @@ export default function ChatPage({ user }: { user: User }) {
 
         <TypingFooter typingUsers={typingUsers} />
 
+        {/* Composer */}
         <footer className="p-4 bg-white shadow">
           {replyTo && (
             <div className="mb-2 p-2 bg-yellow-100 rounded flex justify-between items-center text-sm">
@@ -168,7 +210,9 @@ export default function ChatPage({ user }: { user: User }) {
             </div>
           )}
           <Composer
-            draftPlaceholder={replyTo ? "Type your reply…" : "Type a message…"}
+            draftPlaceholder={
+              replyTo ? "Type your reply…" : "Type a message…"
+            }
             onInput={onInput}
             onSend={(body) => {
               send(body, replyTo ?? undefined);

@@ -29,7 +29,6 @@ export default function NewChatForm() {
 
 
     try {
-      // createChat takes an array of shareIds
       const chat = await createChat(entries.length === 1 ? [entries[0]] : entries);
       navigate(`/chat/${chat._id}`);
     } catch (err: unknown) {

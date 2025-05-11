@@ -6,7 +6,7 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiTrash, FiX } from 'react-icons/fi';
 
 export default function ChatsPage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [chats, setChats] = useState<ChatSummary[]>([]);
   const [query, setQuery] = useState('');
@@ -20,7 +20,8 @@ export default function ChatsPage() {
   }, []);
 
 
-  if (!user) return <Navigate to="/login" replace />;
+  if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
+  if (!user)   return <Navigate to="/login" replace />;
 
   const filtered = chats.filter(c => {
     const others = c.participants.filter(p => p.shareId !== user.shareId).map(p => p.name);

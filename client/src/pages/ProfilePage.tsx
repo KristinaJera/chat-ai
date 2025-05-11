@@ -7,7 +7,7 @@ import { FiUser, FiMail, FiKey, FiEyeOff } from 'react-icons/fi';
 import { getProfile, User } from '../api/users';
 
 export default function ProfilePage() {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
   const [showId, setShowId] = useState(false);
@@ -19,6 +19,8 @@ export default function ProfilePage() {
         .catch(console.error);
     }
   }, [ user]);
+
+  if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
   if (!user)   return <Navigate to="/login" replace />;
 
   return (

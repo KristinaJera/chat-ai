@@ -1,5 +1,5 @@
 import React,{ useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useLocation, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import {
   FiMessageCircle,
@@ -19,13 +19,13 @@ export default function Login() {
  const handleGoogleLogin = loginWithGoogle();
  const { user, loading } = useAuth();
  const navigate = useNavigate();
+  const { pathname } = useLocation();
 
   useEffect(() => {
-  if (!loading && user) {
-    navigate('/chats', { replace: true });
-  }
-}, [loading, user, navigate]);
-
+    if (!loading && user && pathname === '/login') {
+      navigate('/chats', { replace: true });
+    }
+  }, [loading, user, navigate, pathname]);
 
   if (user) return null;
   return (
