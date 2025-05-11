@@ -15,7 +15,8 @@ export function SocketProvider({ children }: Props) {
   const [socket] = useState<Socket>(
     () => io(SOCKET_URL, { 
       autoConnect: true, 
-      withCredentials: true })
+      withCredentials: true,
+  transports: ['websocket'], })
   );
 
   // Clean up on unmount
