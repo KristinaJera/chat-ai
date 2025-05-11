@@ -4,7 +4,6 @@ import { NavBar } from '../components/NavBar';
 import { fetchChats, deleteChat, ChatSummary } from '../api/chats';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { FiPlus, FiSearch, FiTrash, FiX } from 'react-icons/fi';
-import { logout } from '../api/auth';
 
 export default function ChatsPage() {
   const { user } = useAuth();
@@ -14,8 +13,6 @@ export default function ChatsPage() {
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedChats, setSelectedChats] = useState<Set<string>>(new Set());
   const [showModal, setShowModal] = useState(false);
-  const handleLogout = () => logout();
-  // track long-press timer for each item
   const timers = useRef<Record<string, number>>({});
 
   useEffect(() => {
@@ -65,7 +62,7 @@ export default function ChatsPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
       <div className="relative bg-white w-full h-screen overflow-hidden md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-       <NavBar userName={user.name} onLogout={handleLogout} />
+       <NavBar userName={user.name} />
 
         {/* Batch action bar */}
         {selectionMode && (

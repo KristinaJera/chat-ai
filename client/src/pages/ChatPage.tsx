@@ -33,7 +33,6 @@ export default function ChatPage({ user }: { user: User }) {
 
   const { messages, send, edit, remove } = useMessages(chatId, user.id);
   const { typingUsers, onInput } = useTyping(chatId, user.id);
-  const API = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
     fetchChats()
@@ -65,10 +64,6 @@ export default function ChatPage({ user }: { user: User }) {
       : others.map((p) => p.name).join(", ");
   const title = collapsedTitle;
 
-  const handleLogout = () =>
-    fetch(`${API}/auth/logout`, { credentials: "include" })
-      .finally(() => window.location.reload());
-
   const handleDeleteChat = async () => {
     if (!confirm("Delete this chat?")) return;
     await deleteChat(chatId);
@@ -80,7 +75,7 @@ export default function ChatPage({ user }: { user: User }) {
   return (
     <div className="min-h-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500 text-[100%] md:text-sm">
       <div className="relative bg-white w-full h-screen overflow-hidden md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-        <NavBar userName={user.name} onLogout={handleLogout} />
+        <NavBar userName={user.name}/>
 
         {/* participants header */}
         <div className="p-4 bg-white">

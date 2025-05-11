@@ -4,14 +4,13 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { NavBar } from '../components/NavBar';
 import { FiMessageCircle } from 'react-icons/fi';
-import { logout } from '../api/auth';
 import { createChat } from '../api/chats';
 
 export default function NewChatForm() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const [codes, setCodes] = useState<string>('');
-  const handleLogout = () => logout();
+
   if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
   if (!user)   return <Navigate to="/login" replace />;
 
@@ -50,9 +49,7 @@ export default function NewChatForm() {
                    md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col"
       >
         {/* Navbar */}
-        <NavBar userName={user.name} onLogout={handleLogout} />
-
-        {/* (waves/header omitted for brevity) */}
+        <NavBar userName={user.name}/>
 
         {/* Body: spruced-up */}
         <div className="px-6 pt-12 pb-8 flex-1 overflow-y-auto">

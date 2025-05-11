@@ -1,13 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { FiUsers, FiMessageCircle, FiUser, FiLogOut } from 'react-icons/fi';
+import { logout } from '../api/auth';
 
 interface NavBarProps {
   userName: string;
-  onLogout(): void;
 }
 
-export function NavBar({ userName, onLogout }: NavBarProps) {
+export function NavBar({ userName }: NavBarProps) {
+ const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();                     // clears server session
+    navigate('/', { replace: true });  // send them back to login
+  };
+
   return (
     <div className="relative h-44 bg-gradient-to-br from-cyan-400 to-blue-500 overflow-hidden">
       {/* Four waves, each exactly 6rem tall, bottom‑aligned */}
@@ -65,7 +72,7 @@ export function NavBar({ userName, onLogout }: NavBarProps) {
         </Link>
 
         <button
-          onClick={onLogout}
+         onClick={handleLogout}
           className="bg-white p-2 rounded-full shadow-lg text-red-500 hover:scale-110 transition"
           title="Logout"
         >

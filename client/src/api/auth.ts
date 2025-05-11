@@ -2,7 +2,7 @@
 const API = import.meta.env.VITE_API_URL;
 
 export function loginWithGoogle() {
-  window.location.href = `${API}/auth/google`;
+ return `${API}/auth/google`;
 }
 
 export async function logout() {
@@ -17,6 +17,4 @@ export async function logout() {
   } catch (err) {
     console.error('Logout error', err);
   }
-  // use replace so “back” won’t go to a logged-in page
-  window.location.replace('/');
 }

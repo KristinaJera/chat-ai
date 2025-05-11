@@ -5,7 +5,6 @@ import { NavBar } from '../components/NavBar';
 import { fetchChats, ChatSummary, createChat } from '../api/chats';
 import { useNavigate, Navigate } from 'react-router-dom';
 import { FiPlus, FiSearch } from 'react-icons/fi';
-import { logout } from '../api/auth';
 
 interface Contact {
   name: string;
@@ -15,7 +14,6 @@ interface Contact {
 export default function ContactsPage() {
   const { user} = useAuth();
   const navigate = useNavigate();
-  const handleLogout = () => logout();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState('');
 
@@ -54,7 +52,7 @@ export default function ContactsPage() {
                     bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
       <div className="relative bg-white w-full h-screen overflow-hidden
                       md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-        <NavBar userName={user.name} onLogout={handleLogout} />
+        <NavBar userName={user.name}/>
 
         <div className="flex-1 px-5 py-4 md:px-3 md:py-2 overflow-y-auto">
           <h1 className="text-3xl md:text-2xl font-bold mb-6 md:mb-4 text-gray-800">

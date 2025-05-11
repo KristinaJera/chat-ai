@@ -19,11 +19,3 @@ export const translate = (
     body: JSON.stringify({ text, target }),
   }).then((r) => r.json());
 
-// export const lookupWord = (
-//   word: string
-// ): Promise<{ wiki: string; dict: string }> =>
-//   fetch(`${AI_BASE}/lookup-word`, {
-//     method: "POST",
-//     headers: { "Content-Type": "application/json" },
-//     body: JSON.stringify({ word }),
-//   }).then((r) => r.json());

@@ -4,7 +4,6 @@ import { useAuth } from '../hooks/useAuth';
 import { NavBar } from '../components/NavBar';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { FiUser, FiMail, FiKey, FiEyeOff } from 'react-icons/fi';
-import { logout } from '../api/auth';
 import { getProfile, User } from '../api/users';
 
 export default function ProfilePage() {
@@ -12,7 +11,6 @@ export default function ProfilePage() {
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
   const [showId, setShowId] = useState(false);
-  const handleLogout = () => logout();
 
   useEffect(() => {
     if ( user) {
@@ -29,7 +27,7 @@ export default function ProfilePage() {
       <div className="relative bg-white w-full h-screen overflow-hidden
                       md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
         {/* Navbar on top */}
-        <NavBar userName={user.name} onLogout={handleLogout} />
+        <NavBar userName={user.name}/>
 
         {/* Body */}
         <div className="px-6 pt-20 pb-8 space-y-6 flex-1 overflow-y-auto">

@@ -16,8 +16,8 @@ import { loginWithGoogle } from '../api/auth';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Login() {
- const handleGoogleLogin = () => loginWithGoogle();
-  const { user, loading } = useAuth();
+ const handleGoogleLogin = loginWithGoogle();
+ const { user, loading } = useAuth();
  const navigate = useNavigate();
 
   useEffect(() => {
@@ -114,8 +114,8 @@ export default function Login() {
         <div className="absolute inset-x-0 top-[65%] flex justify-center">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-purple-300 opacity-30 blur-xl" />
-            <button
-              onClick={handleGoogleLogin}
+            <a
+              href={handleGoogleLogin}
               className="relative flex items-center space-x-3 px-7 py-4 md:px-4 md:py-3
                          bg-gradient-to-r from-purple-500 to-cyan-400
                          text-white text-lg md:text-sm font-medium rounded-full shadow-lg
@@ -123,7 +123,7 @@ export default function Login() {
             >
               <FcGoogle size={20} />
               <span>Sign up with Google</span>
-            </button>
+            </a>
           </div>
         </div>
 
