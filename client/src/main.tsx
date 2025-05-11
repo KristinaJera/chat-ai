@@ -1,7 +1,7 @@
 // src/main.tsx
 import React, { ReactNode } from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter }   from 'react-router-dom';
+import { HashRouter } from 'react-router-dom';
 import App from './App';
 import { SocketProvider }  from './context/SocketProvider';
 import './index.css';
@@ -21,12 +21,12 @@ class ErrorBoundary extends React.Component<{ children: ReactNode }, ErrorBounda
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
-    <BrowserRouter>
+    <HashRouter>
       <SocketProvider>
         <ErrorBoundary>
           <App />
         </ErrorBoundary>
       </SocketProvider>
-    </BrowserRouter>
+    </HashRouter>
   </React.StrictMode>
 );

@@ -6,9 +6,17 @@ export function loginWithGoogle() {
 }
 
 export async function logout() {
-  await fetch(`${API}/auth/logout`, {
-    credentials: "include",
-  });
-  // reload so that useAuth() sees user=null
-  window.location.href = '/'; 
+  try {
+    const res = await fetch(`${API}/auth/logout`, {
+      method: 'GET',
+      credentials: 'include'
+    });
+    if (!res.ok) {
+      console.error('Logout failed', res.statusText);
+    }
+  } catch (err) {
+    console.error('Logout error', err);
+  }
+  // use replace so “back” won’t go to a logged-in page
+  window.location.replace('/');
 }
