@@ -1,3 +1,7 @@
+// Ensure you’ve installed the necessary packages and their TypeScript types:
+// npm install cookie-parser helmet compression morgan
+// npm install -D @types/cookie-parser @types/helmet @types/compression @types/morgan
+
 import express from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -13,6 +17,7 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
+
 import messagesRoutes from './routes/messages';
 import aiRoutes from './routes/ai';
 import chatsRoutes from './routes/chats';
@@ -178,7 +183,8 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000, tls: true })
     // ----- Serve Frontend in Production -----
     if (IN_PROD) {
       app.use(express.static(path.join(__dirname, '../client/build')));
-      app.get('*', (_req, res) => {
+      // Use a regex route for SPA fallback to avoid path-to-regexp wildcard issues
+      app.get(/.*/, (_req, res) => {
         res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
       });
     }
@@ -187,6 +193,6 @@ mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000, tls: true })
     httpServer.listen(PORT, () => console.log(`API 👉 http://localhost:${PORT}`));
   })
   .catch(err => {
-    console.error('MongoDB connection error:', err);
+    console.error('Startup error:', err);
     process.exit(1);
   });
