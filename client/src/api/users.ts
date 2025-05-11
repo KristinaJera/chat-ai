@@ -15,6 +15,7 @@ export interface User {
 export async function getProfile(): Promise<User> {
   const res = await fetch(`${API_BASE}/me`, {
     credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch profile: ${res.status}`);

@@ -20,7 +20,7 @@ export interface Message {
 
 // Fetch list of chats for current user
 export async function fetchChats(): Promise<ChatSummary[]> {
-  const res = await fetch(API_BASE, { credentials: "include" });
+  const res = await fetch(API_BASE, { credentials: "include",});
   if (!res.ok) throw new Error(`Failed to load chats: ${res.status}`);
   return res.json();
 }
@@ -57,7 +57,7 @@ export async function addParticipant(chatId: string, inviteCode: string): Promis
 
 // Fetch all messages for given chat
 export async function fetchMessages(chatId: string): Promise<Message[]> {
-  const res = await fetch(`${API_BASE}/${chatId}/messages`, { credentials: 'include' });
+  const res = await fetch(`${API_BASE}/${chatId}/messages`, { credentials: 'include',     headers: { 'Content-Type': 'application/json' }, });
   if (!res.ok) throw new Error(`Failed to load messages: ${res.status}`);
   return res.json();
 }
@@ -67,6 +67,7 @@ export async function deleteChat(chatId: string): Promise<void> {
   const res = await fetch(`${API_BASE}/${chatId}`, {
     method: "DELETE",
     credentials: "include",
+        headers: { 'Content-Type': 'application/json' },
   });
   if (!res.ok) {
     const { error } = await res.json();

@@ -6,6 +6,7 @@ const API_BASE = `${import.meta.env.VITE_API_URL}/api/messages`;
 export const getMessages = async (chatId: string): Promise<Message[]> => {
     const res = await fetch(`${API_BASE}?chatId=${encodeURIComponent(chatId)}`, {
        credentials: 'include',
+           headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {
@@ -59,6 +60,7 @@ export const deleteMessage = async (id: string): Promise<Message> => {
   const res = await fetch(`${API_BASE}/${encodeURIComponent(id)}`, {
     method: 'DELETE',
     credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
   });
 
   if (!res.ok) {

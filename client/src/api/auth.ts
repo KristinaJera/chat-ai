@@ -9,7 +9,8 @@ export async function logout() {
   try {
     const res = await fetch(`${API}/auth/logout`, {
       method: 'GET',
-      credentials: 'include'
+      credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
     });
     if (!res.ok) {
       console.error('Logout failed', res.statusText);
