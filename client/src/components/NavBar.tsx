@@ -18,7 +18,7 @@ export function NavBar({ userName }: NavBarProps) {
   return (
     <div className="relative h-44 bg-gradient-to-br from-cyan-400 to-blue-500 overflow-hidden">
       {/* Four waves, each exactly 6rem tall, bottom‑aligned */}
-      {[
+      {/* {[
         { cls: 'wave-slower', fill: 'rgba(255,255,255,0.2)' },
         { cls: 'wave-medium', fill: 'rgba(255,255,255,0.4)' },
         { cls: 'wave-slow',   fill: 'rgba(255,255,255,0.6)' },
@@ -36,7 +36,30 @@ export function NavBar({ userName }: NavBarProps) {
   />
 
         </svg>
-      ))}
+      ))} */}
+       <svg
+      className="absolute bottom-0 left-0 w-[200%] h-36 pointer-events-none"
+      viewBox="0 0 1440 320"
+      preserveAspectRatio="none"
+    >
+      <path
+        className="wave wave-slower"
+        d="M0,160 C360,320 720,0 1080,160 C1320,240 1440,120 1440,120 L1440,320 L0,320 Z"
+      />
+      <path
+        className="wave wave-medium"
+        d="M0,160 C360,320 720,0 1080,160 C1320,240 1440,120 1440,120 L1440,320 L0,320 Z"
+      />
+      <path
+        className="wave wave-slow"
+        d="M0,160 C360,320 720,0 1080,160 C1320,240 1440,120 1440,120 L1440,320 L0,320 Z"
+      />
+      <path
+        className="wave wave-fast"
+        d="M0,160 C360,320 720,0 1080,160 C1320,240 1440,120 1440,120 L1440,320 L0,320 Z"
+      />
+    </svg>
+  
 
       {/* Centered greeting, up in that solid-blue area */}
       <div className="absolute inset-x-0 top-10 text-center z-10">

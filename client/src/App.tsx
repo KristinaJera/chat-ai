@@ -46,7 +46,6 @@ import ProfilePage from './pages/ProfilePage';
 
 export default function App() {
   const { user, loading } = useAuth();
-
   if (loading) return null;
   if (!user)   return <Login />;
 
