@@ -8,6 +8,11 @@ import { createServer } from 'http';
 import { Server } from 'socket.io';
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
+import path from 'path';
+import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
+import compression from 'compression';
+import morgan from 'morgan';
 import messagesRoutes from './routes/messages';
 import aiRoutes from './routes/ai';
 import chatsRoutes from './routes/chats';
@@ -17,53 +22,55 @@ import Chat from './models/Chat';
 import Message from './models/Message';
 import { Types } from 'mongoose';
 
-
 dotenv.config();
 const MONGO_URI = process.env.MONGO_URI!;
 const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN!;
-if (!CLIENT_ORIGIN) {
-  throw new Error('CLIENT_ORIGIN must be set');
-}
-const PORT = Number(process.env.PORT) || 3001;
 const BACKEND_URL = process.env.BACKEND_URL!;
-// Ensure SESSION_SECRET is defined
-if (!process.env.SESSION_SECRET) {
-  throw new Error('SESSION_SECRET environment variable must be set');
-}
+const PORT = Number(process.env.PORT) || 3001;
 
-// ----- Connect to MongoDB and start server on success -----
-mongoose.connect(MONGO_URI, {
-  serverSelectionTimeoutMS: 5000,
-  tls: true,
-})
+if (!CLIENT_ORIGIN) throw new Error('CLIENT_ORIGIN must be set');
+if (!process.env.SESSION_SECRET) throw new Error('SESSION_SECRET must be set');
+
+// ----- Connect to MongoDB and start server -----
+mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 5000, tls: true })
   .then(() => {
     console.log('MongoDB connected');
 
     // ----- Express App Setup -----
     const app = express();
-    app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
-    app.use(express.json());
-    const IN_PROD = process.env.NODE_ENV === 'production';
-    // ----- Session & Passport -----
-    
     app.set('trust proxy', 1);
-    app.use(
-      session({
-        secret: process.env.SESSION_SECRET!,
-        resave: false,
-        saveUninitialized: false,
-        store: MongoStore.create({ mongoUrl: MONGO_URI }),
-           cookie: {
-      secure: IN_PROD,      
-      sameSite: 'none',    
-      maxAge: 1000 * 60 * 60 * 24 * 7, 
-    },
-      })
-    );
+
+    // Security & Performance Middlewares
+    app.use(helmet());
+    app.use(compression());
+    app.use(morgan('combined'));
+
+    // Body parsing with size limit
+    app.use(express.json({ limit: '10kb' }));
+    app.use(cookieParser());
+
+    // CORS
+    app.use(cors({ origin: CLIENT_ORIGIN, credentials: true }));
+
+    const IN_PROD = process.env.NODE_ENV === 'production';
+
+    // ----- Session & Passport -----
+    const sessionMiddleware = session({
+      secret: process.env.SESSION_SECRET!,
+      resave: false,
+      saveUninitialized: false,
+      store: MongoStore.create({ mongoUrl: MONGO_URI }),
+      cookie: {
+        secure: IN_PROD,
+        sameSite: 'none',
+        maxAge: 1000 * 60 * 60 * 24 * 7,
+      },
+    });
+
+    app.use(sessionMiddleware);
     app.use(passport.initialize());
     app.use(passport.session());
 
-    // Passport strategies
     passport.serializeUser((user: any, done) => done(null, user._id));
     passport.deserializeUser(async (id: string, done) => {
       try {
@@ -95,7 +102,6 @@ mongoose.connect(MONGO_URI, {
       )
     );
 
-    // Utility to ensure authentication
     function ensureAuth(req: any, res: any, next: any) {
       return req.isAuthenticated() ? next() : res.sendStatus(401);
     }
@@ -103,13 +109,13 @@ mongoose.connect(MONGO_URI, {
     // ----- HTTP & Socket.IO Setup -----
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
-      cors: {
-        origin: CLIENT_ORIGIN,     
-        credentials: true,         
-        methods: ["GET","POST"],
-      },
+      cors: { origin: CLIENT_ORIGIN, credentials: true, methods: ['GET','POST'] },
     });
 
+    // Share session with Socket.IO
+    io.use((socket, next) => {
+      sessionMiddleware(socket.request as any, {} as any, next as any);
+    });
     io.use((socket, next) => {
       const req = socket.request as any;
       const userId = req.session?.passport?.user;
@@ -129,7 +135,7 @@ mongoose.connect(MONGO_URI, {
         }
       });
       socket.on('message:new', async (data) => {
-        const { chatId, body, replyTo } = data as { chatId: string; body: string; replyTo?: string };
+        const { chatId, body, replyTo } = data as any;
         const saved = await Message.create({
           roomId: new Types.ObjectId(chatId),
           authorId: socket.data.userId,
@@ -143,7 +149,7 @@ mongoose.connect(MONGO_URI, {
     });
 
     // ----- REST Routes -----
-    app.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+    app.get('/auth/google', passport.authenticate('google', { scope: ['profile','email'] }));
     app.get(
       '/auth/google/callback',
       passport.authenticate('google', { failureRedirect: '/login' }),
@@ -155,19 +161,27 @@ mongoose.connect(MONGO_URI, {
       res.json({ id: user._id, name: user.name, email: user.email, shareId: user.shareId });
     });
 
- app.get('/auth/logout', (req, res) => {
-  req.logout(() => {
-    req.session.destroy(() => {
-      res.clearCookie('connect.sid');
-      res.json({ ok: true });
+    app.get('/auth/logout', (req, res) => {
+      req.logout(() => {
+        req.session.destroy(() => {
+          res.clearCookie('connect.sid');
+          res.json({ ok: true });
+        });
+      });
     });
-  });
-});
 
     app.use('/api/messages', messagesRoutes(io));
     app.use('/api/ai', aiRoutes);
     app.use('/api/chats', chatsRoutes);
     app.use('/api/users', usersRoutes);
+
+    // ----- Serve Frontend in Production -----
+    if (IN_PROD) {
+      app.use(express.static(path.join(__dirname, '../client/build')));
+      app.get('*', (_req, res) => {
+        res.sendFile(path.join(__dirname, '../client/build', 'index.html'));
+      });
+    }
 
     // ----- Start Server -----
     httpServer.listen(PORT, () => console.log(`API 👉 http://localhost:${PORT}`));
