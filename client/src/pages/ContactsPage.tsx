@@ -1,10 +1,10 @@
-// src/pages/ContactsPage.tsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { NavBar } from '../components/NavBar';
-import { fetchChats, ChatSummary, createChat } from '../api/chats';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { fetchChats, createChat, type ChatSummary } from '../api/chats';
 import { FiPlus, FiSearch } from 'react-icons/fi';
+import { logout } from '../api/auth';
 
 interface Contact {
   name: string;
@@ -12,17 +12,25 @@ interface Contact {
 }
 
 export default function ContactsPage() {
-  const { user, loading} = useAuth();
+  const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
   const [contacts, setContacts] = useState<Contact[]>([]);
   const [query, setQuery] = useState('');
 
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    navigate('/', { replace: true });
+  };
+
   useEffect(() => {
+    if (!user) return;
     fetchChats()
-      .then((chats: ChatSummary[]) => {
-        const others = chats
+      .then((all: ChatSummary[]) => {
+        const others = all
           .flatMap(c => c.participants)
-          .filter(p => p.shareId !== user?.shareId);
+          .filter(p => p.shareId !== user.shareId);
+        // dedupe by shareId
         const unique = Array.from(
           new Map(others.map(p => [p.shareId, p])).values()
         );
@@ -31,10 +39,15 @@ export default function ContactsPage() {
       .catch(e => console.error('Failed to load chats:', e));
   }, [user]);
 
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">Loading…</div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
 
-    if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
-    if (!user)   return <Navigate to="/login" replace />;
-  
   const filtered = contacts.filter(c =>
     c.name.toLowerCase().includes(query.toLowerCase())
   );
@@ -43,25 +56,23 @@ export default function ContactsPage() {
     try {
       const chat = await createChat([shareId]);
       navigate(`/chat/${chat._id}`);
-    } catch (e: unknown) {
-      const msg = e instanceof Error ? e.message : 'Unknown error';
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
       alert('Could not open chat: ' + msg);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center
+<div className="min-h-screen flex items-center justify-center
                     bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
       <div className="relative bg-white w-full h-screen overflow-hidden
                       md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
-        <NavBar userName={user.name}/>
-
-        <div className="flex-1 px-5 py-4 md:px-3 md:py-2 overflow-y-auto">
+        <NavBar userName={user.name} onLogout={handleLogout}/>    
+           <div className="flex-1 px-5 py-4 md:px-3 md:py-2 overflow-y-auto">
           <h1 className="text-3xl md:text-2xl font-bold mb-6 md:mb-4 text-gray-800">
             Your Contacts
-          </h1>
-
-          <div className="relative mb-6 md:mb-4">
+          </h1 >    
+               <div className="relative mb-6 md:mb-4">
             <FiSearch className="absolute left-4 top-1/2 -translate-y-1/2
                                 text-gray-400 text-lg md:text-base" />
             <input
@@ -73,9 +84,8 @@ export default function ContactsPage() {
                          focus:outline-none focus:ring-2 focus:ring-cyan-300
                          text-base md:text-sm"
             />
-          </div>
-
-          <ul className="space-y-4 md:space-y-3">
+          </div >
+                   <ul className="space-y-4 md:space-y-3">
             {filtered.map(c => (
               <li
                 key={c.shareId}
@@ -101,9 +111,7 @@ export default function ContactsPage() {
                 <div className="text-2xl md:text-base text-gray-400">›</div>
               </li>
             ))}
-          </ul>
-
-          <div className="flex justify-center mt-8 md:mt-6">
+          </ul >         <div className="flex justify-center mt-8 md:mt-6">
             <button
               onClick={() => navigate('/new-chat')}
               className="p-4 md:p-2 bg-blue-500 text-white rounded-full

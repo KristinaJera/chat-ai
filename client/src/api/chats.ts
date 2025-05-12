@@ -1,98 +1,3 @@
-// const API_BASE = `${import.meta.env.VITE_API_URL}/api/chats`;
-
-// export interface ChatSummary {
-//   _id: string;
-//   participants: { name: string; shareId: string }[];
-// }
-
-// export interface Chat {
-//   _id: string;
-//   participants: string[];
-// }
-
-// export interface Message {
-//   _id: string;
-//   chat: string;
-//   sender: string;
-//   body: string;
-//   timestamp: string;
-// }
-
-// // Fetch list of chats for current user
-// export async function fetchChats(): Promise<ChatSummary[]> {
-//   const res = await fetch(API_BASE, { credentials: "include",});
-//   if (!res.ok) throw new Error(`Failed to load chats: ${res.status}`);
-//   return res.json();
-// }
-
-// // Create (or get) a chat by share-IDs array or single inviteCode
-// export async function createChat(participants: string[]): Promise<Chat> {
-//   const res = await fetch(API_BASE, {
-//     method: 'POST',
-//     credentials: 'include',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({ participants }),
-//   });
-//   if (!res.ok) {
-//     const { error } = await res.json().catch(() => ({} as { error: string }));
-//     throw new Error(error || `Create chat failed: ${res.status}`);
-//   }
-//   return res.json();
-// }
-
-// // Invite additional user by shareId
-// export async function addParticipant(chatId: string, inviteCode: string): Promise<ChatSummary> {
-//   const res = await fetch(`${API_BASE}/${chatId}/participants`, {
-//     method: 'POST',
-//     credentials: 'include',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({ inviteCode }),
-//   });
-//   if (!res.ok) {
-//     const { error } = await res.json();
-//     throw new Error(error || `Add participant failed: ${res.status}`);
-//   }
-//   return res.json();
-// }
-
-// // Fetch all messages for given chat
-// export async function fetchMessages(chatId: string): Promise<Message[]> {
-//   const res = await fetch(`${API_BASE}/${chatId}/messages`, { credentials: 'include',     headers: { 'Content-Type': 'application/json' }, });
-//   if (!res.ok) throw new Error(`Failed to load messages: ${res.status}`);
-//   return res.json();
-// }
-
-// // Delete a chat by ID
-// export async function deleteChat(chatId: string): Promise<void> {
-//   const res = await fetch(`${API_BASE}/${chatId}`, {
-//     method: "DELETE",
-//     credentials: "include",
-//         headers: { 'Content-Type': 'application/json' },
-//   });
-//   if (!res.ok) {
-//     const { error } = await res.json();
-//     throw new Error(error || `Delete chat failed: ${res.status}`);
-//   }
-// }
-// // Remove a participant from a group chat 
-// export async function removeParticipant(
-//   chatId: string,
-//   shareId: string
-// ): Promise<ChatSummary> {
-//   const res = await fetch(`${API_BASE}/${chatId}/participants`, {
-//     method: 'DELETE',
-//     credentials: 'include',
-//     headers: { 'Content-Type': 'application/json' },
-//     body: JSON.stringify({ shareId }),
-//   });
-//   if (!res.ok) {
-//     const { error } = await res.json();
-//     throw new Error(error || `Remove participant failed: ${res.status}`);
-//   }
-//   return res.json();
-// }
-
-// src/api/chats.ts
 import client from './client';
 
 export interface ChatSummary {
@@ -105,26 +10,42 @@ export interface Chat {
   participants: string[];
 }
 
-export function fetchChats(): Promise<ChatSummary[]> {
-  return client.get<ChatSummary[]>('/api/chats').then(r => r.data);
+export async function fetchChats(): Promise<ChatSummary[]> {
+  const { data } = await client.get<ChatSummary[]>('/api/chats');
+  return data;
 }
 
-export function createChat(participants: string[]): Promise<Chat> {
-  return client.post<Chat>('/api/chats', { participants }).then(r => r.data);
+export async function createChat(
+  participants: string[]
+): Promise<Chat> {
+  const { data } = await client.post<Chat>('/api/chats', {
+    participants,
+  });
+  return data;
 }
 
-export function addParticipant(chatId: string, inviteCode: string): Promise<ChatSummary> {
-  return client
-    .post<ChatSummary>(`/api/chats/${chatId}/participants`, { inviteCode })
-    .then(r => r.data);
+export async function addParticipant(
+  chatId: string,
+  inviteCode: string
+): Promise<ChatSummary> {
+  const { data } = await client.post<ChatSummary>(
+    `/api/chats/${chatId}/participants`,
+    { inviteCode }
+  );
+  return data;
 }
 
-export function deleteChat(chatId: string): Promise<void> {
-  return client.delete(`/api/chats/${chatId}`).then(() => {});
+export async function deleteChat(chatId: string): Promise<void> {
+  await client.delete(`/api/chats/${chatId}`);
 }
 
-export function removeParticipant(chatId: string, shareId: string): Promise<ChatSummary> {
-  return client
-    .delete<ChatSummary>(`/api/chats/${chatId}/participants`, { data: { shareId } })
-    .then(r => r.data);
+export async function removeParticipant(
+  chatId: string,
+  shareId: string
+): Promise<ChatSummary> {
+  const { data } = await client.delete<ChatSummary>(
+    `/api/chats/${chatId}/participants`,
+    { data: { shareId } }
+  );
+  return data;
 }

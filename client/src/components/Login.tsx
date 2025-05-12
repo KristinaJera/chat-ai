@@ -1,5 +1,5 @@
-import React,{ useEffect } from 'react';
-import {useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FcGoogle } from 'react-icons/fc';
 import {
   FiMessageCircle,
@@ -13,43 +13,31 @@ import {
   FiSend,
 } from 'react-icons/fi';
 import { loginWithGoogle } from '../api/auth';
-import { useAuth } from '../hooks/useAuth';
+import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
- const handleGoogleLogin = loginWithGoogle();
- const { user, loading } = useAuth();
- const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const { pathname } = useLocation();
 
   useEffect(() => {
-    if (!loading && user && pathname === '/login') {
+    if (!loading && user && pathname === '/') {
       navigate('/chats', { replace: true });
     }
   }, [loading, user, navigate, pathname]);
 
   if (user) return null;
+
   return (
-    <div
-      className="
-        min-h-screen flex items-center justify-center
-        bg-white
-        md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500
-      "
-    >
-      <div
-        className="
-          relative bg-white overflow-hidden
-          w-full h-screen
-          md:w-80 md:h-[600px] md:rounded-2xl md:shadow-xl
-        "
-      >
-        {/* Top half gradient + animated waves */}
+    <div className="min-h-screen flex items-center justify-center bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
+      <div className="relative bg-white overflow-hidden w-full h-screen md:w-80 md:h-[600px] md:rounded-2xl md:shadow-xl">
+        {/* Top gradient + waves */}
         <div className="relative h-3/5 bg-gradient-to-br from-cyan-400 to-blue-500 overflow-hidden">
-          {[ 
+          {[
             { cls: 'wave-slower', fill: 'rgba(255,255,255,0.2)' },
             { cls: 'wave-medium', fill: 'rgba(255,255,255,0.4)' },
-            { cls: 'wave-slow',   fill: 'rgba(255,255,255,0.6)' },
-            { cls: 'wave-fast',   fill: 'white' },
+            { cls: 'wave-slow', fill: 'rgba(255,255,255,0.6)' },
+            { cls: 'wave-fast', fill: 'white' },
           ].map(({ cls, fill }, i) => (
             <svg
               key={i}
@@ -63,8 +51,6 @@ export default function Login() {
               />
             </svg>
           ))}
-
-          {/* Title + icons */}
           <div className="absolute inset-x-0 top-[30%] text-center">
             <div className="relative inline-block">
               <h1 className="text-white text-5xl md:text-4xl font-bold">
@@ -110,12 +96,12 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Sign‑up pill */}
+        {/* Google login button */}
         <div className="absolute inset-x-0 top-[65%] flex justify-center">
           <div className="relative">
             <div className="absolute inset-0 rounded-full bg-purple-300 opacity-30 blur-xl" />
-            <a
-              href={handleGoogleLogin}
+            <button
+              onClick={loginWithGoogle}
               className="relative flex items-center space-x-3 px-7 py-4 md:px-4 md:py-3
                          bg-gradient-to-r from-purple-500 to-cyan-400
                          text-white text-lg md:text-sm font-medium rounded-full shadow-lg
@@ -123,7 +109,7 @@ export default function Login() {
             >
               <FcGoogle size={20} />
               <span>Sign up with Google</span>
-            </a>
+            </button>
           </div>
         </div>
 

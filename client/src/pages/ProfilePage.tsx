@@ -1,35 +1,46 @@
-// src/pages/ProfilePage.tsx
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../hooks/useAuth';
-import { NavBar } from '../components/NavBar';
 import { Navigate, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { NavBar } from '../components/NavBar';
+import { getProfile, type User } from '../api/users';
 import { FiUser, FiMail, FiKey, FiEyeOff } from 'react-icons/fi';
-import { getProfile, User } from '../api/users';
+import { logout } from '../api/auth';
 
 export default function ProfilePage() {
-  const { user, loading } = useAuth();
+  const { user, loading, setUser } = useAuth();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<User | null>(null);
   const [showId, setShowId] = useState(false);
 
+  const handleLogout = async () => {
+    await logout();
+    setUser(null);
+    navigate('/', { replace: true });
+  };
+
   useEffect(() => {
-    if ( user) {
+    if (user) {
       getProfile()
         .then(setProfile)
         .catch(console.error);
     }
-  }, [ user]);
+  }, [user]);
 
-  if (loading) return <div className="flex items-center justify-center h-screen">Loading…</div>;
-  if (!user)   return <Navigate to="/login" replace />;
-
-  return (
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center">Loading…</div>
+    );
+  }
+  if (!user) {
+    return <Navigate to="/" replace />;
+  }
+ return (
     <div className="min-h-screen flex items-center justify-center
                     bg-white md:bg-gradient-to-br md:from-cyan-400 md:to-blue-500">
       <div className="relative bg-white w-full h-screen overflow-hidden
                       md:w-80 md:h-[600px] md:rounded-3xl md:shadow-xl flex flex-col">
         {/* Navbar on top */}
-        <NavBar userName={user.name}/>
+        <NavBar userName={user.name} onLogout={handleLogout}/>
 
         {/* Body */}
         <div className="px-6 pt-20 pb-8 space-y-6 flex-1 overflow-y-auto">

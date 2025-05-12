@@ -49,11 +49,4 @@ router.post("/translate", (req: Request, res: Response) => {
   res.json({ translated });
 });
 
-// router.post("/lookup-word", (req: Request, res: Response) => {
-//   const { word } = req.body as { word: string };
-//   const wiki = `Example Wikipedia snippet about "${word}".`;
-//   const dict = `Definition of "${word}" from dictionary.`;
-//   res.json({ wiki, dict });
-// });
-
 export default router;
