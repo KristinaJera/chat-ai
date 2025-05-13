@@ -7,6 +7,7 @@ export interface IUser extends Document {
   email: string;
   shareId: string;
   password?: string;  
+  contacts: string[];
 }
 
 const userSchema = new Schema<IUser>({
@@ -15,6 +16,7 @@ const userSchema = new Schema<IUser>({
   email:    { type: String, required: true, unique: true },
   shareId:  { type: String, required: true, unique: true, default: uuidv4 },
   password:  { type: String, select: false },
+  contacts: { type: [String], default: [] },
 });
 
 export default model<IUser>('User', userSchema);

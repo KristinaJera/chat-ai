@@ -26,6 +26,7 @@ import messagesRoutes from './routes/messages';
 import aiRoutes from './routes/ai';
 import chatsRoutes from './routes/chats';
 import usersRoutes from './routes/users';
+import contactsRoutes from './routes/contacts';
 import User from './models/User';
 import Chat from './models/Chat';
 import Message from './models/Message';
@@ -233,6 +234,7 @@ app.post('/auth/logout', (req, res) => {
     app.use('/api/ai', aiRoutes);
     app.use('/api/chats', chatsRoutes);
     app.use('/api/users', usersRoutes);
+    app.use('/api/contacts', contactsRoutes);
 
     // ── 8. Serve Frontend in Prod ────────────────────────────────────────
     if (IN_PROD) {

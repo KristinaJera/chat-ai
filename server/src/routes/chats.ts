@@ -1,5 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
-import { Types, Document } from 'mongoose';
+import { Types } from 'mongoose';
 import User, { IUser } from '../models/User';
 import Chat, { IChat } from '../models/Chat';
 import Message from '../models/Message';
@@ -36,14 +36,127 @@ router.get(
   }
 );
 
-// POST /api/chats - create or fetch 1:1 or group chat by shareId(s)
+// GET /api/chats/:chatId — fetch a single chat with populated participants
+router.get(
+  '/:chatId',
+  ensureAuth,
+  async (req: Request, res: Response): Promise<void> => {
+    const { chatId } = req.params;
+    // validate the ID
+    if (!Types.ObjectId.isValid(chatId)) {
+      res.status(400).json({ error: 'Invalid chatId' });
+      return;
+    }
+
+    try {
+      const meId = (req.user as IUser)._id as Types.ObjectId;
+
+      // find and populate
+      const chat = await Chat.findById(chatId)
+        .populate('participants', 'name shareId');
+
+      if (!chat) {
+        res.sendStatus(404);
+        return;
+      }
+
+      // ensure current user is a participant
+      const isParticipant = chat.participants.some((p: any) =>
+        (p._id as Types.ObjectId).equals(meId)
+      );
+      if (!isParticipant) {
+        res.sendStatus(403);
+        return;
+      }
+
+      res.json(chat);
+    } catch (err) {
+      console.error('Fetch single chat error:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
+
+// POST /api/chats - create or fetch 1:1 or group chat by shareId(s) and update contacts
+// router.post(
+//   '/',
+//   ensureAuth,
+//   async (req: Request, res: Response): Promise<void> => {
+//     try {
+//       const meId = (req.user as IUser)._id as Types.ObjectId;
+//       const meShareId = (req.user as IUser).shareId;
+//       let participants: Types.ObjectId[] = [];
+//       let otherShareIds: string[] = [];
+
+//       // 1:1 chat via inviteCode (shareId)
+//       if (typeof req.body.inviteCode === 'string') {
+//         const other = await User.findOne({ shareId: req.body.inviteCode });
+//         if (!other) {
+//           res.status(404).json({ error: 'User not found for inviteCode' });
+//           return;
+//         }
+//         const otherId = other._id as Types.ObjectId;
+//         participants = [meId, otherId];
+//         otherShareIds = [other.shareId];
+//       }
+//       // Group chat via array of shareIds
+//       else if (Array.isArray(req.body.participants)) {
+//         const shareIds = req.body.participants as string[];
+//         const users = await User.find({ shareId: { $in: shareIds } });
+//         if (users.length !== shareIds.length) {
+//           res.status(404).json({ error: 'One or more users not found' });
+//           return;
+//         }
+//         participants = users.map(u => u._id as Types.ObjectId);
+//         otherShareIds = users.map(u => u.shareId);
+//       }
+
+//       // Always include current user
+//       if (!participants.some(id => id.equals(meId))) {
+//         participants.push(meId);
+//       }
+
+//       // Find existing chat with exact participants
+//       let chat = await Chat.findOne({
+//         participants: { $all: participants, $size: participants.length }
+//       });
+
+//       if (!chat) {
+//         chat = await Chat.create({ participants });
+//       }
+
+//       // Update contacts for each participant pair
+//       // Add each other to contacts array
+//       for (const shareId of otherShareIds) {
+//         // add other to current user
+//         await User.findByIdAndUpdate(
+//           meId,
+//           { $addToSet: { contacts: shareId } }
+//         ).exec();
+//         // add current to other user
+//         await User.findOneAndUpdate(
+//           { shareId },
+//           { $addToSet: { contacts: meShareId } }
+//         ).exec();
+//       }
+
+//       res.status(201).json(chat);
+//     } catch (err) {
+//       console.error('Chat creation error:', err);
+//       res.status(500).json({ error: 'Server error' });
+//     }
+//   }
+// );
 router.post(
   '/',
   ensureAuth,
-  async (req: Request, res: Response): Promise<void> => {
+  async (req, res) => {
     try {
-      const meId = (req.user as IUser)._id as Types.ObjectId;
+      const me = req.user as IUser;
+      const meId = me._id as Types.ObjectId;
+      const meShareId = me.shareId;
       let participants: Types.ObjectId[] = [];
+      let otherShareIds: string[] = [];
 
       // 1:1 chat via inviteCode (shareId)
       if (typeof req.body.inviteCode === 'string') {
@@ -52,8 +165,8 @@ router.post(
           res.status(404).json({ error: 'User not found for inviteCode' });
           return;
         }
-        const otherId = other._id as Types.ObjectId;
-        participants = [meId, otherId];
+        participants = [meId, other._id as Types.ObjectId];
+        otherShareIds = [other.shareId];
       }
       // Group chat via array of shareIds
       else if (Array.isArray(req.body.participants)) {
@@ -64,6 +177,7 @@ router.post(
           return;
         }
         participants = users.map(u => u._id as Types.ObjectId);
+        otherShareIds = users.map(u => u.shareId);
       }
 
       // Always include current user
@@ -72,12 +186,20 @@ router.post(
       }
 
       // Find existing chat with exact participants
-      let chat = await Chat.findOne({
-        participants: { $all: participants, $size: participants.length }
-      });
-
+      let chat = await Chat.findOne({ participants: { $all: participants, $size: participants.length } });
       if (!chat) {
         chat = await Chat.create({ participants });
+      }
+
+      // Populate participant details
+      await chat.populate('participants', 'name shareId');
+
+      // Update contacts for each new participant
+      for (const shareId of otherShareIds) {
+        // add other to current user
+        await User.findByIdAndUpdate(meId, { $addToSet: { contacts: shareId } }).exec();
+        // add current user to other’s contacts
+        await User.findOneAndUpdate({ shareId }, { $addToSet: { contacts: meShareId } }).exec();
       }
 
       res.status(201).json(chat);
@@ -95,6 +217,7 @@ router.post(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const meId = (req.user as IUser)._id as Types.ObjectId;
+      const meShareId = (req.user as IUser).shareId;
       const { chatId } = req.params;
       const { inviteCode } = req.body;
 
@@ -119,6 +242,10 @@ router.post(
       if (!chat.participants.some(id => id.equals(otherId))) {
         chat.participants.push(otherId);
         await chat.save();
+
+        // update contacts bi-directionally
+        await User.findByIdAndUpdate(meId, { $addToSet: { contacts: other.shareId } }).exec();
+        await User.findOneAndUpdate({ shareId: other.shareId }, { $addToSet: { contacts: (req.user as IUser).shareId } }).exec();
       }
 
       res.json(chat);
@@ -128,7 +255,6 @@ router.post(
     }
   }
 );
-
 // GET /api/chats/:chatId/messages - fetch only messages for this chat
 router.get(
   '/:chatId/messages',

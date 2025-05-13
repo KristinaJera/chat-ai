@@ -8,7 +8,7 @@ import { MessageList } from '../components/chat/MessageList';
 import { Composer } from '../components/chat/Composer';
 import { TypingFooter } from '../components/chat/TypingFooter';
 import {
-  fetchChats,
+  fetchChat,
   deleteChat,
   removeParticipant,
   type ChatSummary,
@@ -34,15 +34,25 @@ export default function ChatPage() {
   const { messages, send, edit, remove } = useMessages(chatId ?? '', user?.id ?? '');
   const { typingUsers, onInput } = useTyping(chatId ?? '', user?.id ?? '');
 
-  useEffect(() => {
-    if (!chatId) return;
-    fetchChats()
-      .then(all => {
-        const chat = all.find(c => c._id === chatId);
-        if (chat) setParticipants(chat.participants);
-      })
-      .catch(console.error);
-  }, [chatId]);
+  // useEffect(() => {
+  //   if (!chatId) return;
+  //   fetchChats()
+  //     .then(all => {
+  //       const chat = all.find(c => c._id === chatId);
+  //       if (chat) setParticipants(chat.participants);
+  //     })
+  //     .catch(console.error);
+  // }, [chatId]);
+useEffect(() => {
+  if (!chatId) return;
+ fetchChat(chatId)
+   .then(chat => {
+    console.log('Loaded chat:', chat.participants);
+
+   setParticipants(chat.participants);
+   })
+   .catch(console.error);
+}, [chatId]);
 
   const handleLogout = async () => {
     await logout();

@@ -15,10 +15,13 @@ export async function fetchChats(): Promise<ChatSummary[]> {
   return data;
 }
 
-export async function createChat(
-  participants: string[]
-): Promise<Chat> {
-  const { data } = await client.post<Chat>('/api/chats', {
+export async function fetchChat(chatId: string): Promise<ChatSummary> {
+  const { data } = await client.get<ChatSummary>(`/api/chats/${chatId}`);
+  return data;
+}
+
+export async function createChat(participants: string[]): Promise<ChatSummary> {
+  const { data } = await client.post<ChatSummary>('/api/chats', {
     participants,
   });
   return data;

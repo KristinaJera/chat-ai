@@ -1,44 +1,53 @@
-import { Router, RequestHandler, Response } from 'express';
-import { IUser } from '../models/User';
+// src/routes/contacts.ts
+import { Router, RequestHandler } from 'express';
 import UserModel from '../models/User';
 import { Types } from 'mongoose';
 
-
 const router = Router();
 
-// Auth guard middleware using Express's type
+// Auth guard
 const ensureAuth: RequestHandler = (req, res, next) => {
-  // Passport adds isAuthenticated and user
   if (req.isAuthenticated && req.isAuthenticated()) {
     return next();
   }
   res.sendStatus(401);
 };
 
-// GET /api/users/me — return current authenticated user
+// GET /api/contacts — list current user's contacts
 router.get(
-  '/me',
+  '/',
   ensureAuth,
-  (req, res: Response) => {
-    // Cast req.user (provided by Passport) to IUser
-    const u = req.user as IUser;
-    res.json({
-      id: (u._id as unknown as import('mongoose').Types.ObjectId).toString(),
-      name: u.name,
-      email: u.email,
-      shareId: u.shareId,
-    });
+  async (req, res) => {
+    const currentUser = (req.user as any);
+    if (!Types.ObjectId.isValid(currentUser._id)) {
+      res.status(400).json({ error: 'Invalid user ID' });
+      return;
+    }
+    const userId = currentUser._id.toString();
+
+    const user = await UserModel.findById(userId).select('contacts').exec();
+    if (!user) {
+      res.sendStatus(404);
+      return;
+    }
+
+    // Populate contact details
+    const contacts = await UserModel.find(
+      { shareId: { $in: user.contacts } },
+      'name shareId'
+    ).exec();
+
+    res.json(contacts);
   }
 );
 
+// DELETE /api/contacts/:shareId — remove a contact by shareId
 router.delete(
-  '/contacts/:shareId',
+  '/:shareId',
   ensureAuth,
   async (req, res) => {
     const { shareId } = req.params;
-    const currentUser = req.user as any;
-
-    // Validate the current user ID
+    const currentUser = (req.user as any);
     if (!Types.ObjectId.isValid(currentUser._id)) {
       res.status(400).json({ error: 'Invalid user ID' });
       return;
