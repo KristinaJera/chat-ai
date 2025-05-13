@@ -34,15 +34,6 @@ export default function ChatPage() {
   const { messages, send, edit, remove } = useMessages(chatId ?? '', user?.id ?? '');
   const { typingUsers, onInput } = useTyping(chatId ?? '', user?.id ?? '');
 
-  // useEffect(() => {
-  //   if (!chatId) return;
-  //   fetchChats()
-  //     .then(all => {
-  //       const chat = all.find(c => c._id === chatId);
-  //       if (chat) setParticipants(chat.participants);
-  //     })
-  //     .catch(console.error);
-  // }, [chatId]);
 useEffect(() => {
   if (!chatId) return;
  fetchChat(chatId)
