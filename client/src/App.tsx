@@ -12,6 +12,7 @@ import ChatPage from './pages/ChatPage';
 import ProfilePage from './pages/ProfilePage';
 import ContactsPage from './pages/ContactsPage';
 import ChatsPage from './pages/ChatsPage';
+import { ScanInviteScreen } from './pages/ScanInviteScreen';
 
 function AuthFallback() {
   const { user, loading } = useAuth();
@@ -39,6 +40,7 @@ export default function App() {
         <Route path="/new-chat" element={<NewChatForm />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/chat/:id" element={<ChatPage />} />
+        <Route path="/scan-invite" element={<ScanInviteScreen />} />
       </Route>
 
       {/* fallback */}

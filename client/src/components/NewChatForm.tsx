@@ -8,6 +8,7 @@ import { createChat } from '../api/chats';
 export default function NewChatForm() {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
+  const [manualMode, setManualMode] = useState(false);
   const [codes, setCodes] = useState('');
 
   if (loading) {
@@ -37,9 +38,7 @@ export default function NewChatForm() {
       const chat = await createChat(entries);
       navigate(`/chat/${chat._id}`);
     } catch (err: unknown) {
-      // Narrow unknown to Error
-      const message =
-        err instanceof Error ? err.message : 'Unknown error';
+      const message = err instanceof Error ? err.message : 'Unknown error';
       alert(`Failed to create chat: ${message}`);
     }
   };
@@ -60,28 +59,47 @@ export default function NewChatForm() {
           </h2>
           <div className="h-1 w-20 mx-auto my-2 bg-gradient-to-r from-purple-500 to-cyan-400 rounded" />
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <label
-              htmlFor="shareIds"
-              className="block text-sm font-medium text-gray-700"
-            >
-              Share IDs (comma-separated)
-            </label>
-            <input
-              id="shareIds"
-              type="text"
-              value={codes}
-              onChange={e => setCodes(e.target.value)}
-              placeholder="e.g. abc123, def456"
-              className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-300"
-            />
+          {/* Scan vs Manual */}
+          <div className="flex space-x-4 mb-6">
             <button
-              type="submit"
-              className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              onClick={() => navigate('/scan-invite')}
+              className="flex-1 px-4 py-2 bg-blue-400 text-white rounded-lg hover:bg-blue-500 transition"
             >
-              Start Chat
+              Scan QR
             </button>
-          </form>
+            <button
+              onClick={() => setManualMode(m => !m)}
+              className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            >
+              {manualMode ? 'Hide Manual' : 'Enter ID'}
+            </button>
+          </div>
+
+          {/* Manual Entry Form */}
+          {manualMode && (
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <label
+                htmlFor="shareIds"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Share IDs (comma-separated)
+              </label>
+              <input
+                id="shareIds"
+                type="text"
+                value={codes}
+                onChange={e => setCodes(e.target.value)}
+                placeholder="e.g. abc123, def456"
+                className="w-full border border-gray-300 p-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-cyan-300"
+              />
+              <button
+                type="submit"
+                className="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+              >
+                Start Chat
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
