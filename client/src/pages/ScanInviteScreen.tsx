@@ -27,10 +27,9 @@ export function ScanInviteScreen() {
             navigate('/contacts');
           }
         },
-        errorMessage => {                       // error callback
-          // optional: log decode errors, but don't stop scanning
-          console.warn('QR decode error:', errorMessage);
-        }
+      () => {
+        // ignore decode-fail errors to avoid console spam
+      }
       )
       .catch(() => {                           // camera access failure
         alert('Unable to access camera');
