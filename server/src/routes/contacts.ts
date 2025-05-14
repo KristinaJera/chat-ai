@@ -74,4 +74,49 @@ router.delete(
   }
 );
 
+router.post(
+  '/',
+  ensureAuth,
+  async (req, res) => {
+    const { shareId } = req.body;
+    if (!shareId) {
+      res.status(400).json({ error: 'shareId is required' });
+      return;
+    }
+
+    // Verify the contact user exists
+    const contactUser = await UserModel.findOne({ shareId }).select('_id');
+    if (!contactUser) {
+      res.status(404).json({ error: 'User not found' });
+      return;
+    }
+
+    const currentUser = req.user as any;
+    if (!Types.ObjectId.isValid(currentUser._id)) {
+      res.status(400).json({ error: 'Invalid user ID' });
+      return;
+    }
+    const userId = currentUser._id.toString();
+
+    // Add shareId to contacts array, avoid duplicates
+    try {
+      const updated = await UserModel.findByIdAndUpdate(
+        userId,
+        { $addToSet: { contacts: shareId } },
+        { new: true }
+      ).exec();
+
+      if (!updated) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+
+      res.status(201).json({ shareId });
+    } catch (err) {
+      console.error('Add contact error:', err);
+      res.status(500).json({ error: 'Failed to add contact' });
+    }
+  }
+);
+
 export default router;

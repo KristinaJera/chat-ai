@@ -12,3 +12,7 @@ export async function getContacts(): Promise<Contact[]> {
 export async function deleteContact(shareId: string): Promise<void> {
   await client.delete(`/api/contacts/${shareId}`);
 }
+export async function createContact(contact: Contact): Promise<Contact> {
+  const { data } = await client.post<Contact>('/api/contacts', contact);
+  return data;
+}
