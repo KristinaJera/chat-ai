@@ -65,4 +65,27 @@ router.delete(
   }
 );
 
+router.get(
+  '/by-share/:shareId',
+  ensureAuth,
+  async (req: any, res: Response): Promise<void> => {
+    const shareId: string = req.params.shareId;
+    try {
+      const user = await UserModel.findOne({ shareId }).select('name email shareId');
+      if (!user) {
+        res.status(404).json({ error: 'User not found' });
+        return;
+      }
+      res.json({
+        id:       (user._id as Types.ObjectId).toString(),
+        name:     user.name,
+        email:    user.email,
+        shareId:  user.shareId,
+      });
+    } catch (err) {
+      console.error('Error fetching user by shareId:', err);
+      res.status(500).json({ error: 'Server error' });
+    }
+  }
+);
 export default router;
