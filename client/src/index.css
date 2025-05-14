@@ -67,3 +67,10 @@
   animation: hop 2s ease-in-out infinite;
 }
 
+#qr-scanner,
+#qr-scanner video,
+#qr-scanner canvas {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
