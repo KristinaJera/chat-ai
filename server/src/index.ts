@@ -1,5 +1,7 @@
 import dotenv from 'dotenv';
 import path from 'path';
+import os from 'os';  
+import fs from 'fs';
 
 // ── 1. Dotenv setup ──────────────────────────────────────────────────────
 // Only load a .env file when NOT in production
@@ -7,8 +9,14 @@ if (process.env.NODE_ENV !== 'production') {
   // this will look for “server/.env” by default
   dotenv.config();
 }
+// const tmpBase = os.tmpdir();         // e.g. "/tmp"
+const uploadsDir = path.join(os.tmpdir(), 'uploads');
 
-import express from 'express';
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('🗂️ Created uploads directory at', uploadsDir);
+}
+import express,  { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import session from 'express-session';
 import MongoStore from 'connect-mongo';
@@ -21,7 +29,6 @@ import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
-import fs from 'fs';
 import messagesRoutes from './routes/messages';
 import aiRoutes from './routes/ai';
 import chatsRoutes from './routes/chats';
@@ -71,19 +78,25 @@ mongoose
     // ── 4. Express setup ────────────────────────────────────────────────
     const app = express();
 
-      // ── Ensure uploads folder exists ──────────────────────────────────
-     const uploadsDir = path.join(__dirname, "../uploads");
-     if (!fs.existsSync(uploadsDir)) {
-       fs.mkdirSync(uploadsDir, { recursive: true });
-       console.log("🗂️  Created uploads directory at", uploadsDir);
-     }
+    app.get('/favicon.ico', (_req, res) => {
+  res.status(204).end();
+});
+       app.use(
+      '/uploads',
+      express.static(uploadsDir, {
+        setHeaders(res) {
+          res.set('Access-Control-Allow-Origin', '*');
+        },
+      })
+    );
+    app.set('trust proxy', 1);
 
     app.use((req, res, next) => {
   console.log(`➡️ [${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   console.log("   Content-Type:", req.headers["content-type"]);
   next();
 });
-    app.set('trust proxy', 1);
+    
 
     // Security & perf
     // app.use(helmet());
@@ -164,6 +177,22 @@ app.use(
       return req.isAuthenticated() ? next() : res.sendStatus(401);
     }
 
+ app.use(
+  // cast the function to ErrorRequestHandler so TS picks the right overload
+  ((
+    err: any,
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): void => {
+    console.error("💥 Uncaught error:", err.stack || err);
+    res.status(err.status || 500).json({
+      error: err.message || "Internal server error",
+      stack:
+        process.env.NODE_ENV !== "production" ? err.stack : undefined,
+    });
+  }) as express.ErrorRequestHandler
+);
     // ── 6. HTTP & Socket.IO ──────────────────────────────────────────────
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
@@ -247,15 +276,8 @@ app.post('/auth/logout', (req, res) => {
     });
   });
 });
-// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use('/uploads',
-  express.static(path.join(__dirname, 'uploads'), {
-    setHeaders(res) {
-      // allow any origin (or lock it down to your front-end URL)
-      res.set('Access-Control-Allow-Origin', '*');
-    }
-  })
-);
+
+
     app.use('/api/messages', messagesRoutes(io));
     app.use('/api/ai', aiRoutes);
     app.use('/api/chats', chatsRoutes);

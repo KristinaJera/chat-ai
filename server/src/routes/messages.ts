@@ -4,8 +4,12 @@ import { Server as SocketIOServer } from "socket.io";
 import { Types } from "mongoose";
 import multer from "multer";
 import path from "path";
+import os from 'os';
 import Message from "../models/Message";
 import Chat from "../models/Chat";
+
+export default function messageRoutes(io: SocketIOServer): Router {
+  const r = Router();
 
 function ensureAuth(req: any, res: any, next: NextFunction): void {
   console.log("🔐 ensureAuth: isAuthenticated?", req.isAuthenticated?.());
@@ -15,12 +19,12 @@ function ensureAuth(req: any, res: any, next: NextFunction): void {
 }
 
 // Multer setup
-const uploadsDir = path.join(__dirname, "../uploads");
+const uploadsDir = path.join(os.tmpdir(), "uploads");
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => cb(null, uploadsDir),
   filename:    (_req, file, cb) => {
     const ext = path.extname(file.originalname);
-    const name = `${Date.now()}-${Math.random().toString(36).substr(2,8)}${ext}`;
+  const name = `${Date.now()}-${file.originalname}`;
     cb(null, name);
   },
 });
@@ -31,9 +35,6 @@ const upload = multer({
 const multipartMiddleware = upload.fields([
   { name: "attachments", maxCount: 10 },
 ]);
-
-export default function messageRoutes(io: SocketIOServer): Router {
-  const r = Router();
 
   // GET /api/messages?chatId=xxx
   r.get(
@@ -61,8 +62,8 @@ export default function messageRoutes(io: SocketIOServer): Router {
 
         const msgs = await Message.find({ roomId: chatId }).sort({ createdAt: 1 });
         res.json(msgs);
-      } catch (err) {
-        console.error("Fetch messages error:", err);
+      } catch (err: any) {
+        console.error("Fetch messages error:", err.message, err.stack);
         next(err);
       }
     }
