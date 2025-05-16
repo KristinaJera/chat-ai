@@ -70,6 +70,14 @@ mongoose
 
     // ── 4. Express setup ────────────────────────────────────────────────
     const app = express();
+
+      // ── Ensure uploads folder exists ──────────────────────────────────
+     const uploadsDir = path.join(__dirname, "../uploads");
+     if (!fs.existsSync(uploadsDir)) {
+       fs.mkdirSync(uploadsDir, { recursive: true });
+       console.log("🗂️  Created uploads directory at", uploadsDir);
+     }
+
     app.use((req, res, next) => {
   console.log(`➡️ [${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   console.log("   Content-Type:", req.headers["content-type"]);
