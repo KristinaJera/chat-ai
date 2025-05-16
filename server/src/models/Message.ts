@@ -1,24 +1,20 @@
-import mongoose, { Schema, Document, Types } from "mongoose";
+// in models/Message.ts
+import { Schema, model } from "mongoose";
 
-export interface IMessage extends Document {
-  roomId: Types.ObjectId;
-  authorId: Types.ObjectId;
-  body: string;
-  replyTo?: Types.ObjectId;
-  status?: "sent" | "edited" | "deleted";
-  createdAt: Date;
-  updatedAt: Date;
-}
+const AttachmentSchema = new Schema({
+  filename: String,
+  mimeType: String,
+  url: String,
+  size: Number,
+}, { _id: false });
 
-const MessageSchema = new Schema<IMessage>(
-  {
-    roomId: { type: Schema.Types.ObjectId, ref: "Chat", required: true },
-    authorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    body: { type: String, required: true },
-    replyTo: { type: Schema.Types.ObjectId, ref: "Message" },
-    status: { type: String, enum: ["sent", "edited", "deleted"], default: "sent" },
-  },
-  { timestamps: true }
-);
+const MessageSchema = new Schema({
+  roomId: { type: Schema.Types.ObjectId, ref: "Chat", required: true },
+  authorId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+  body: String,
+  attachments: [AttachmentSchema],
+  replyTo: { type: Schema.Types.ObjectId, ref: "Message" },
+  status: String,
+}, { timestamps: true });
 
-export default mongoose.model<IMessage>("Message", MessageSchema);
+export default model("Message", MessageSchema);

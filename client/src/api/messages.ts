@@ -4,11 +4,12 @@ import type { Message } from '../types/message';
 export const getMessages = async (
   chatId: string
 ): Promise<Message[]> => {
-  const { data } = await client.get<Message[]>(
-    `/api/chats/${chatId}/messages`
-  );
+  const { data } = await client.get<Message[]>('/api/messages', {
+    params: { chatId },
+  });
   return data;
 };
+
 export const createMessage = async (
   msg: Partial<Message> & { chatId: string }
 ): Promise<Message> => {

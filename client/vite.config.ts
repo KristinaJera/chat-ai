@@ -1,11 +1,12 @@
 /// <reference types="node" />
 /// <reference types="vite/client" />
 
-import { defineConfig, loadEnv } from 'vite';    // ← make sure this line is present
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
+  const target = env.VITE_API_URL || 'http://localhost:3001';
 
   return {
     plugins: [react()],
@@ -15,18 +16,23 @@ export default defineConfig(({ mode }) => {
       host: true,
       proxy: {
         '/api': {
-          target: 'http://localhost:3001',
+          target,
           changeOrigin: true,
-          cookieDomainRewrite: ''  
+          cookieDomainRewrite: '',
         },
         '/auth': {
-          target: 'http://localhost:3001',
+          target,
           changeOrigin: true,
-          cookieDomainRewrite: ''  
+          cookieDomainRewrite: '',
         },
         '/socket.io': {
-          target: 'ws://localhost:3001',
+          target: target.replace(/^http/, 'ws'),
           ws: true,
+        },
+        '/uploads': {
+          target,
+          changeOrigin: true,
+          cookieDomainRewrite: '',
         },
       },
     },

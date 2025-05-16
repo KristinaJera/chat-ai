@@ -1,11 +1,18 @@
 export interface Message {
   _id: string;
   roomId: string;
-  chat?: string; // optional: kept for legacy structure if needed
+  chat?: string; 
   authorId: string;
   body: string;
   replyTo?: string;
   status: "sent" | "edited" | "deleted";
-  createdAt: string; // ISO date string
-  updatedAt: string; // ISO date string
+  createdAt: string; 
+  updatedAt: string; 
+   attachments?: Attachment[];
+}
+export interface Attachment {
+  filename: string;
+  mimeType: string;
+  url: string;
+  size: number;
 }

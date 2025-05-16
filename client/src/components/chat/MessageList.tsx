@@ -26,7 +26,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   const [showScrollBtn, setShowScrollBtn] = useState(false);
   const hasAutoScrolled = useRef(false);
 
-  // 1) On first render *after* messages come in, jump straight to the bottom anchor.
+
   useEffect(() => {
     if (messages.length > 0 && !hasAutoScrolled.current) {
       bottomAnchor.current?.scrollIntoView({ behavior: "auto" });
@@ -35,7 +35,6 @@ export const MessageList: React.FC<MessageListProps> = ({
     }
   }, [messages]);
 
-  // 2) After that, only auto‑scroll when already at bottom; otherwise show button
   useEffect(() => {
     if (!hasAutoScrolled.current) return;
     const el = listRef.current;
@@ -50,7 +49,6 @@ export const MessageList: React.FC<MessageListProps> = ({
     }
   }, [messages]);
 
-  // 3) Track manual scroll to toggle our scroll‑down button
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;

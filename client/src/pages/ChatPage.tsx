@@ -173,11 +173,10 @@ useEffect(() => {
           <Composer
             draftPlaceholder={replyTo ? 'Type your reply…' : 'Type a message…'}
             onInput={onInput}
-            onSend={body => {
-              send(body, replyTo ?? undefined);
-              setReplyTo(null);
-            }}
-            onAttach={file => console.log('Attach:', file)}
+           onSend={(body, attachments) => {
+            send(body, replyTo ?? undefined, attachments);
+            setReplyTo(null);
+          }}
           />
         </footer>
       </div>

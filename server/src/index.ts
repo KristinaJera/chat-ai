@@ -70,10 +70,20 @@ mongoose
 
     // ── 4. Express setup ────────────────────────────────────────────────
     const app = express();
+    app.use((req, res, next) => {
+  console.log(`➡️ [${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.log("   Content-Type:", req.headers["content-type"]);
+  next();
+});
     app.set('trust proxy', 1);
 
     // Security & perf
-    app.use(helmet());
+    // app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  })
+);
     app.use(compression());
     app.use(morgan('combined'));
 
@@ -229,7 +239,15 @@ app.post('/auth/logout', (req, res) => {
     });
   });
 });
-
+// app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use('/uploads',
+  express.static(path.join(__dirname, 'uploads'), {
+    setHeaders(res) {
+      // allow any origin (or lock it down to your front-end URL)
+      res.set('Access-Control-Allow-Origin', '*');
+    }
+  })
+);
     app.use('/api/messages', messagesRoutes(io));
     app.use('/api/ai', aiRoutes);
     app.use('/api/chats', chatsRoutes);
