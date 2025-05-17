@@ -1,40 +1,42 @@
-// src/routes/messageRoutes.ts
+/// src/routes/messageRoutes.ts
 import { Router, Request, Response, NextFunction } from "express";
 import { Server as SocketIOServer } from "socket.io";
 import { Types } from "mongoose";
 import multer from "multer";
-import path from "path";
-import os from 'os';
+// multer-s3 doesn’t ship its own types, so require and ignore
+// @ts-ignore
+const multerS3 = require("multer-s3");
+import AWS from "aws-sdk";
 import Message from "../models/Message";
 import Chat from "../models/Chat";
+
+// Extend the built-in Multer File with S3's `location`
+type S3UploadedFile = Express.Multer.File & { location: string };
 
 export default function messageRoutes(io: SocketIOServer): Router {
   const r = Router();
 
-function ensureAuth(req: any, res: any, next: NextFunction): void {
-  console.log("🔐 ensureAuth: isAuthenticated?", req.isAuthenticated?.());
-  if (req.isAuthenticated?.()) return next();
-  console.log("🔐 ensureAuth: rejecting with 401");
-  res.sendStatus(401);
-}
+  // Authentication guard
+  function ensureAuth(req: any, res: any, next: NextFunction): void {
+    if (req.isAuthenticated?.()) return next();
+    res.sendStatus(401);
+  }
 
-// Multer setup
-const uploadsDir = path.join(os.tmpdir(), "uploads");
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadsDir),
-  filename:    (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-  const name = `${Date.now()}-${file.originalname}`;
-    cb(null, name);
-  },
-});
-const upload = multer({
-  storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
-});
-const multipartMiddleware = upload.fields([
-  { name: "attachments", maxCount: 10 },
-]);
+  // S3 + multer-s3 setup
+  const s3 = new AWS.S3({ region: process.env.AWS_REGION });
+  const uploadToS3 = multer({
+    storage: multerS3({
+      s3,
+      bucket: process.env.S3_BUCKET_NAME!,
+      // contentType: multerS3.AUTO_CONTENT_TYPE,
+      // acl: "public-read",
+      key: (_req: any, file: any, cb: any) => {
+        const key = `uploads/${Date.now()}-${file.originalname}`;
+        cb(null, key);
+      },
+    }),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  }).fields([{ name: "attachments", maxCount: 10 }]);
 
   // GET /api/messages?chatId=xxx
   r.get(
@@ -43,111 +45,83 @@ const multipartMiddleware = upload.fields([
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         const userId = (req.user as any)._id;
-        const chatId = typeof req.query.chatId === "string" ? req.query.chatId : "";
-
-        if (!chatId || !Types.ObjectId.isValid(chatId)) {
-          res.status(400).json({ error: "Invalid or missing chatId" });
+        const chatId = String(req.query.chatId || "");
+        if (!Types.ObjectId.isValid(chatId)) {
+          res.status(400).json({ error: "Invalid chatId" });
           return;
         }
-
         const chat = await Chat.findById(chatId);
-        if (!chat) {
-          res.status(404).json({ error: "Chat not found" });
-          return;
-        }
-        if (!chat.participants.some((p: any) => p.equals(userId))) {
+        if (!chat?.participants.some((p) => p.equals(userId))) {
           res.sendStatus(403);
           return;
         }
-
         const msgs = await Message.find({ roomId: chatId }).sort({ createdAt: 1 });
         res.json(msgs);
-      } catch (err: any) {
-        console.error("Fetch messages error:", err.message, err.stack);
+      } catch (err) {
         next(err);
       }
     }
   );
 
-  // POST /api/messages  ← handles JSON & attachments
+  // POST /api/messages
   r.post(
-  "/",
-  ensureAuth,
-
-  // multipart detector
-  (req, res, next) => {
-    const ct = req.headers["content-type"] || "";
-    if (ct.startsWith("multipart/form-data")) {
-      return multipartMiddleware(req, res, next);
-    }
-    next();
-  },
-
-  // create message
-  async (req: Request, res: Response, next: NextFunction): Promise<void> => {
-    try {
-      const files =
-        (req.files as Record<string, Express.Multer.File[]> | undefined)
-          ?.attachments || [];
-
-      const { chatId, body, replyTo } = req.body as {
-        chatId: string;
-        body?: string;
-        replyTo?: string;
-      };
-
-      // validate chatId
-      if (!chatId || !Types.ObjectId.isValid(chatId)) {
-        res.status(400).json({ error: "Invalid or missing chatId" });
-        return;
-      }
-
-      // require text or attachment
-      if ((!body || !body.trim()) && files.length === 0) {
-        res
-          .status(400)
-          .json({ error: "Message body or attachment required" });
-        return;
-      }
-
-      // membership check
-      const userId = (req.user as any)._id;
-      const chat = await Chat.findById(chatId);
-      if (!chat?.participants.some((p) => p.equals(userId))) {
-        res.sendStatus(403);
-        return;
-      }
-
-      // build payload
-      const msgData: any = {
-        roomId:   new Types.ObjectId(chatId),
-        authorId: userId,
-        body:     (body || "").trim(),
-      };
-      if (replyTo && Types.ObjectId.isValid(replyTo)) {
-        msgData.replyTo = new Types.ObjectId(replyTo);
-      }
-      if (files.length) {
-        msgData.attachments = files.map((f) => ({
+    "/",
+    ensureAuth,
+    // Only run multer-s3 if multipart
+    (req, res, next) => {
+      const ct = req.headers["content-type"] || "";
+      if (!ct.startsWith("multipart/form-data")) return next();
+      uploadToS3(req, res, (err: any) => {
+        if (err) {
+          console.error("multer-s3 upload error:", err);
+          return res.status(500).json({ error: "UploadFailed", details: err.message });
+        }
+        console.log("files:", req.files);
+        next();
+      });
+    },
+    // Handler
+    async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+      try {
+        const files = ((req.files as Record<string, S3UploadedFile[]>)?.attachments || []) as S3UploadedFile[];
+        const { chatId, body, replyTo } = req.body as { chatId: string; body?: string; replyTo?: string };
+        if (!Types.ObjectId.isValid(chatId)) {
+          res.status(400).json({ error: "Invalid chatId" });
+          return;
+        }
+        if ((!body || !body.trim()) && files.length === 0) {
+          res.status(400).json({ error: "Message body or attachments required" });
+          return;
+        }
+        const userId = (req.user as any)._id;
+        const chat = await Chat.findById(chatId);
+        if (!chat?.participants.some((p) => p.equals(userId))) {
+          res.sendStatus(403);
+          return;
+        }
+        const attachments = files.map((f) => ({
           filename: f.originalname,
           mimeType: f.mimetype,
-          url:      `/uploads/${f.filename}`,
-          size:     f.size,
+          url: f.location,
+          size: f.size,
         }));
+        const msgData: any = {
+          roomId: new Types.ObjectId(chatId),
+          authorId: userId,
+          body: (body || "").trim(),
+          attachments: attachments.length ? attachments : undefined,
+        };
+        if (replyTo && Types.ObjectId.isValid(replyTo)) {
+          msgData.replyTo = new Types.ObjectId(replyTo);
+        }
+        const msg = await Message.create(msgData);
+        io.to(chatId).emit("message:new", msg);
+        res.status(201).json(msg);
+      } catch (err) {
+        next(err);
       }
-
-      // persist & broadcast
-      const msg = await Message.create(msgData);
-      io.to(chatId).emit("message:new", msg);
-
-      res.status(201).json(msg);
-      return;
-    } catch (err) {
-      console.error("Create message error:", err);
-      next(err);
     }
-  }
-);
+  );
 
   // PUT /api/messages/:id
   r.put(
@@ -158,12 +132,10 @@ const multipartMiddleware = upload.fields([
         const userId = (req.user as any)._id;
         const { id } = req.params;
         const { body } = req.body;
-
         if (!body || !body.trim()) {
           res.status(400).json({ error: "Message body is required" });
           return;
         }
-
         const msg = await Message.findById(id);
         if (!msg) {
           res.sendStatus(404);
@@ -173,16 +145,13 @@ const multipartMiddleware = upload.fields([
           res.sendStatus(403);
           return;
         }
-
         msg.body = body.trim();
         msg.status = "edited";
         msg.updatedAt = new Date();
         await msg.save();
-
         io.to(msg.roomId.toString()).emit("message:update", msg);
         res.json(msg);
       } catch (err) {
-        console.error("Update message error:", err);
         next(err);
       }
     }
@@ -196,12 +165,10 @@ const multipartMiddleware = upload.fields([
       try {
         const userId = (req.user as any)._id;
         const { id } = req.params;
-
         if (!Types.ObjectId.isValid(id)) {
           res.status(400).json({ error: "Invalid message ID" });
           return;
         }
-
         const msg = await Message.findById(id);
         if (!msg) {
           res.sendStatus(404);
@@ -211,14 +178,11 @@ const multipartMiddleware = upload.fields([
           res.sendStatus(403);
           return;
         }
-
         msg.status = "deleted";
         await msg.save();
-
         io.to(msg.roomId.toString()).emit("message:delete", msg);
         res.json(msg);
-      } catch (err: any) {
-        console.error("Delete message error:", err);
+      } catch (err) {
         next(err);
       }
     }

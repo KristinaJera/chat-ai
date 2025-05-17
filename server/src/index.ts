@@ -9,13 +9,12 @@ if (process.env.NODE_ENV !== 'production') {
   // this will look for “server/.env” by default
   dotenv.config();
 }
-// const tmpBase = os.tmpdir();         // e.g. "/tmp"
-const uploadsDir = path.join(os.tmpdir(), 'uploads');
+console.log("☁️  AWS_REGION:", process.env.AWS_REGION);
+console.log("🔑 AWS_ACCESS_KEY_ID:", !!process.env.AWS_ACCESS_KEY_ID);
+console.log("🔒 AWS_SECRET_ACCESS_KEY:", !!process.env.AWS_SECRET_ACCESS_KEY);
+console.log("📦 S3_BUCKET_NAME:", process.env.S3_BUCKET_NAME);
 
-if (!fs.existsSync(uploadsDir)) {
-  fs.mkdirSync(uploadsDir, { recursive: true });
-  console.log('🗂️ Created uploads directory at', uploadsDir);
-}
+
 import express,  { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import session from 'express-session';
@@ -81,14 +80,7 @@ mongoose
     app.get('/favicon.ico', (_req, res) => {
   res.status(204).end();
 });
-       app.use(
-      '/uploads',
-      express.static(uploadsDir, {
-        setHeaders(res) {
-          res.set('Access-Control-Allow-Origin', '*');
-        },
-      })
-    );
+
     app.set('trust proxy', 1);
 
     app.use((req, res, next) => {
@@ -193,6 +185,18 @@ app.use(
     });
   }) as express.ErrorRequestHandler
 );
+
+// Catch any errors not already handled
+app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+  console.error("💥 Unhandled error in request:", {
+    message: err.message,
+    stack: err.stack,
+    awsErrorCode: err.code,
+    awsErrorMessage: err.$metadata?.httpStatusCode,
+  });
+  res.status(err.status || 500).json({ error: err.message });
+});
+
     // ── 6. HTTP & Socket.IO ──────────────────────────────────────────────
     const httpServer = createServer(app);
     const io = new Server(httpServer, {
@@ -276,7 +280,10 @@ app.post('/auth/logout', (req, res) => {
     });
   });
 });
-
+app.use('/api/messages', (req, res, next) => {
+  console.log(`➡️ [${new Date().toISOString()}] Incoming ${req.method} ${req.originalUrl}`);
+  next();
+});
 
     app.use('/api/messages', messagesRoutes(io));
     app.use('/api/ai', aiRoutes);
