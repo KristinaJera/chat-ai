@@ -103,7 +103,6 @@ Chat AI is a modern chat application with AI-powered features that enhance commu
 
 ### Running the App Locally
 
-   ```bash
    npm run dev
 
 ### Deployment
