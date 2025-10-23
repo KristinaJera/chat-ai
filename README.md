@@ -1,6 +1,6 @@
-# Chai AI
+# Chat AI
 
-Chai AI is a modern chat application with AI-powered features that enhance communication without compromising user privacy. The app uses Google Authentication and a unique contact system based on QR codes and shared IDs—no phone numbers or unnecessary personal info needed!
+Chat AI is a modern chat application with AI-powered features that enhance communication without compromising user privacy. The app uses Google Authentication and a unique contact system based on QR codes and shared IDs—no phone numbers or unnecessary personal info needed!
 
 ---
 
@@ -83,9 +83,10 @@ Chai AI is a modern chat application with AI-powered features that enhance commu
    
 2. Install dependencies:
    
+   ```bash
    npm install
 
-3. Create a .env file in the root directory and add the following environment variables:
+4. Create a .env file in the root directory and add the following environment variables:
 
    OPENAI_API_KEY=your_openai_api_key
    MONGO_URI=your_mongodb_connection_string
@@ -102,6 +103,7 @@ Chai AI is a modern chat application with AI-powered features that enhance commu
 
 ### Running the App Locally
 
+   ```bash
    npm run dev
 
 ### Deployment
