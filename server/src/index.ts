@@ -89,9 +89,6 @@ mongoose
     app.get('/favicon.ico', (_req, res) => {
   res.status(204).end();
 });
-
-    app.set('trust proxy', 1);
-
     app.use((req, res, next) => {
   console.log(`➡️ [${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
   console.log("   Content-Type:", req.headers["content-type"]);
@@ -132,9 +129,9 @@ app.use(
       resave: false,
       saveUninitialized: false,
       store: MongoStore.create({ mongoUrl: MONGO_URI }),
-    cookie: {
-  secure: false,
-  sameSite: 'none',  
+   cookie: {
+  secure: true,          
+  sameSite: 'none',
   httpOnly: true,
   maxAge: 1000 * 60 * 60 * 24 * 7,
 },
