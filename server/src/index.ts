@@ -84,6 +84,7 @@ mongoose
 
     // ── 4. Express setup ────────────────────────────────────────────────
     const app = express();
+    app.set('trust proxy', 1);
 
     app.get('/favicon.ico', (_req, res) => {
   res.status(204).end();
@@ -133,7 +134,7 @@ app.use(
       store: MongoStore.create({ mongoUrl: MONGO_URI }),
     cookie: {
   secure: false,
-  sameSite: 'lax',
+  sameSite: 'none',  
   httpOnly: true,
   maxAge: 1000 * 60 * 60 * 24 * 7,
 },
