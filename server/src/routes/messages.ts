@@ -23,7 +23,11 @@ export default function messageRoutes(io: SocketIOServer): Router {
   }
 
   // S3 + multer-s3 setup
-  const s3 = new AWS.S3({ region: process.env.AWS_REGION });
+const s3 = new AWS.S3({
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+  region: process.env.AWS_REGION!,
+});
   const uploadToS3 = multer({
     storage: multerS3({
       s3,
@@ -70,20 +74,29 @@ export default function messageRoutes(io: SocketIOServer): Router {
     // Only run multer-s3 if multipart
     (req, res, next) => {
       const ct = req.headers["content-type"] || "";
-      if (!ct.startsWith("multipart/form-data")) return next();
-      uploadToS3(req, res, (err: any) => {
-        if (err) {
-          console.error("multer-s3 upload error:", err);
-          return res.status(500).json({ error: "UploadFailed", details: err.message });
-        }
-        console.log("files:", req.files);
-        next();
+     if (!ct || !ct.includes("multipart/form-data")) return next();
+   uploadToS3(req, res, (err: any) => {
+  if (err) {
+    console.error("🔥 S3 UPLOAD ERROR:", err);
+    return res.status(500).json({
+      error: "Upload failed",
+      details: err.message,
+    });
+  }
+
+  console.log("✅ Files uploaded:", req.files);
+  next();
       });
     },
     // Handler
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
-        const files = ((req.files as Record<string, S3UploadedFile[]>)?.attachments || []) as S3UploadedFile[];
+     const files = Array.isArray((req.files as any)?.attachments)
+  ? (req.files as any).attachments
+  : [];
+
+console.log("📦 FILES:", files);
+      console.log("📦 RAW FILES:", req.files);
         const { chatId, body, replyTo } = req.body as { chatId: string; body?: string; replyTo?: string };
         if (!Types.ObjectId.isValid(chatId)) {
           res.status(400).json({ error: "Invalid chatId" });
@@ -99,12 +112,24 @@ export default function messageRoutes(io: SocketIOServer): Router {
           res.sendStatus(403);
           return;
         }
-        const attachments = files.map((f) => ({
-          filename: f.originalname,
-          mimeType: f.mimetype,
-          url: f.location,
-          size: f.size,
-        }));
+// const attachments = (files as S3UploadedFile[])
+//   .filter((f: S3UploadedFile) => f.location)
+//   .map((f: S3UploadedFile) => ({
+//     filename: f.originalname,
+//     mimeType: f.mimetype,
+//     url: f.location,
+//     size: f.size,
+//   }));
+const filesTyped = files as S3UploadedFile[];
+
+const attachments = filesTyped
+  .filter((f) => f.location)
+  .map((f) => ({
+    filename: f.originalname,
+    mimeType: f.mimetype,
+    url: f.location,
+    size: f.size,
+  }));
         const msgData: any = {
           roomId: new Types.ObjectId(chatId),
           authorId: userId,
@@ -130,7 +155,7 @@ export default function messageRoutes(io: SocketIOServer): Router {
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         const userId = (req.user as any)._id;
-        const { id } = req.params;
+      const id = String(req.params.id);
         const { body } = req.body;
         if (!body || !body.trim()) {
           res.status(400).json({ error: "Message body is required" });
@@ -164,7 +189,7 @@ export default function messageRoutes(io: SocketIOServer): Router {
     async (req: Request, res: Response, next: NextFunction): Promise<void> => {
       try {
         const userId = (req.user as any)._id;
-        const { id } = req.params;
+       const id = String(req.params.id);
         if (!Types.ObjectId.isValid(id)) {
           res.status(400).json({ error: "Invalid message ID" });
           return;

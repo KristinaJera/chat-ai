@@ -41,7 +41,7 @@ router.get(
   '/:chatId',
   ensureAuth,
   async (req: Request, res: Response): Promise<void> => {
-    const { chatId } = req.params;
+   const chatId = String(req.params.chatId);
     // validate the ID
     if (!Types.ObjectId.isValid(chatId)) {
       res.status(400).json({ error: 'Invalid chatId' });
@@ -147,7 +147,7 @@ router.post(
     try {
       const meId = (req.user as IUser)._id as Types.ObjectId;
       const meShareId = (req.user as IUser).shareId;
-      const { chatId } = req.params;
+      const chatId = String(req.params.chatId);
       const { inviteCode } = req.body;
 
       const chat = await Chat.findById(chatId);
@@ -191,7 +191,7 @@ router.get(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const meId = (req.user as IUser)._id as Types.ObjectId;
-      const { chatId } = req.params;
+     const chatId = String(req.params.chatId);
 
       const chat = await Chat.findById(chatId);
       if (!chat) {
@@ -220,7 +220,7 @@ router.delete(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const meId = (req.user as IUser)._id as Types.ObjectId;
-      const { chatId } = req.params;
+      const chatId = String(req.params.chatId);
 
       if (!Types.ObjectId.isValid(chatId)) {
         res.status(400).json({ error: 'Invalid chatId' });
@@ -255,7 +255,7 @@ router.delete(
   async (req: Request, res: Response): Promise<void> => {
     try {
       const meId = (req.user as IUser)._id as Types.ObjectId;
-      const { chatId } = req.params;
+    const chatId = String(req.params.chatId);
       const { shareId } = req.body;
 
       const chat = await Chat.findById(chatId);

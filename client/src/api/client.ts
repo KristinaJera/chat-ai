@@ -1,7 +1,10 @@
 import axios from 'axios';
 
 const client = axios.create({
-  baseURL: import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL,
+  // baseURL: import.meta.env.DEV ? '' : import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.DEV
+  ? 'http://localhost:3001'
+  : import.meta.env.VITE_API_URL,
   withCredentials: true,
 });
 

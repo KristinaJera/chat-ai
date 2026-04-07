@@ -37,6 +37,14 @@ import User from './models/User';
 import Chat from './models/Chat';
 import Message from './models/Message';
 
+process.on("uncaughtException", (err) => {
+  console.error("💥 UNCAUGHT EXCEPTION:", err);
+});
+
+process.on("unhandledRejection", (err) => {
+  console.error("💥 UNHANDLED REJECTION:", err);
+});
+
 // ── 2. Env vars & sanity checks ─────────────────────────────────────────
 const {
   MONGO_URI = '',
@@ -123,12 +131,12 @@ app.use(
       resave: false,
       saveUninitialized: false,
       store: MongoStore.create({ mongoUrl: MONGO_URI }),
-      cookie: {
-        secure: IN_PROD,
-        sameSite:IN_PROD ? 'none' : 'lax', 
-        path: '/',  
-        maxAge: 1000 * 60 * 60 * 24 * 7,       // 7 days
-      },
+    cookie: {
+  secure: false,
+  sameSite: 'lax',
+  httpOnly: true,
+  maxAge: 1000 * 60 * 60 * 24 * 7,
+},
     });
     app.use(sessionMiddleware);
     app.use(passport.initialize());
@@ -249,14 +257,21 @@ app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     });
 
     // ── 7. REST Routes ────────────────────────────────────────────────────
-    app.get(
-      '/auth/google',
-      passport.authenticate('google', { scope: ['profile', 'email'] })
-    );
+ app.get(
+  '/auth/google',
+  passport.authenticate('google', {
+    scope: ['profile', 'email'],
+    prompt: 'select_account'
+  })
+);
     app.get(
       '/auth/google/callback',
       passport.authenticate('google', { failureRedirect: '/login' }),
-      (_req, res) => res.redirect(CLIENT_ORIGIN)
+    (req, res) => {
+  req.session.save(() => {
+    res.redirect(CLIENT_ORIGIN);
+  });
+}
     );
 
     app.get('/api/users/me', ensureAuth, (req, res) => {
